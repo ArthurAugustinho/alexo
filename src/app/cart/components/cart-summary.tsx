@@ -1,22 +1,31 @@
+"use client";
+
 import Image from "next/image";
-import React from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { formatCentsToBRL } from "@/helpers/money";
+
+type CartSummaryProduct = {
+  id: string;
+  name: string;
+  variantName: string;
+  quantity: number;
+  priceInCents: number;
+  imageUrl: string;
+};
 
 interface CartSummaryProps {
   subtotalInCents: number;
   totalInCents: number;
-  products: Array<{
-    id: string;
-    name: string;
-    variantName: string;
-    quantity: number;
-    priceInCents: number;
-    imageUrl: string;
-  }>;
+  products: CartSummaryProduct[];
 }
+
+const formatCurrency = (valueInCents: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 0,
+  }).format(valueInCents / 100);
 
 const CartSummary = ({
   subtotalInCents,
@@ -26,54 +35,68 @@ const CartSummary = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Resumo</CardTitle>
+        <CardTitle>Seu pedido</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex justify-between">
-          <p className="text-sm">Subtotal</p>
-          <p className="text-muted-foreground text-sm font-medium">
-            {formatCentsToBRL(subtotalInCents)}
-          </p>
-        </div>
-        <div className="flex justify-between">
-          <p className="text-sm">Frete</p>
-          <p className="text-muted-foreground text-sm font-medium">GRÁTIS</p>
-        </div>
-        <div className="flex justify-between">
-          <p className="text-sm">Total</p>
-          <p className="text-muted-foreground text-sm font-medium">
-            {formatCentsToBRL(totalInCents)}
-          </p>
-        </div>
-
-        <div className="py-3">
-          <Separator />
-        </div>
-
-        {products.map((product) => (
-          <div className="flex items-center justify-between" key={product.id}>
-            <div className="flex items-center gap-4">
-              <Image
-                src={product.imageUrl}
-                alt={product.name}
-                width={78}
-                height={78}
-                className="rounded-lg"
-              />
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-semibold">{product.name}</p>
-                <p className="text-muted-foreground text-xs font-medium">
-                  {product.variantName}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col items-end justify-center gap-2">
-              <p className="text-sm font-bold">
-                {formatCentsToBRL(product.priceInCents)}
-              </p>
-            </div>
+      <CardContent className="space-y-4">
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between">
+            <span>Subtotal</span>
+            <span className="font-medium">
+              {formatCurrency(subtotalInCents)}
+            </span>
           </div>
-        ))}
+          <div className="flex items-center justify-between">
+            <span>Transporte e Manuseio</span>
+            <span className="text-muted-foreground">Grátis</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span>Taxa Estimada</span>
+            <span className="text-muted-foreground">—</span>
+          </div>
+          <div className="flex items-center justify-between text-base font-semibold">
+            <span>Total</span>
+            <span>{formatCurrency(totalInCents)}</span>
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4">
+          {products.map((product) => (
+            <div key={product.id}>
+              <div className="flex items-start gap-3">
+                <div className="relative h-16 w-16 overflow-hidden rounded-md bg-muted">
+                  <Image
+                    src={product.imageUrl}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1 text-sm">
+                  <p className="font-semibold leading-snug">{product.name}</p>
+                  <p className="text-muted-foreground leading-snug">
+                    {product.variantName}
+                  </p>
+                  <p className="text-muted-foreground leading-snug">
+                    {product.quantity} {product.quantity > 1 ? "unidades" : "unidade"}
+                  </p>
+                  <p className="font-semibold">
+                    {formatCurrency(
+                      product.priceInCents * product.quantity,
+                    )}
+                  </p>
+                </div>
+              </div>
+              <Separator className="mt-4" />
+            </div>
+          ))}
+          {products.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground">
+              Seu carrinho está vazio.
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

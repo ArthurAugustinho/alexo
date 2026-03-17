@@ -11,12 +11,9 @@ export const useFinishOrder = () => {
   return useMutation({
     mutationKey: getUseFinishOrderMutationKey(),
     mutationFn: async () => {
-      await finishOrder();
+      return await finishOrder();
     },
     onSuccess: () => {
-      queryClient.setQueryData(getUseCartQueryKey(), (prev) =>
-        prev ? { ...prev, items: [], totalPriceInCents: 0 } : prev,
-      );
       queryClient.invalidateQueries({ queryKey: getUseCartQueryKey() });
     },
   });

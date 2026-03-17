@@ -2,15 +2,14 @@ import { eq } from "drizzle-orm";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import ProductActions from "@/app/product-variant/[slug]/components/product-actions";
+import VariantSelector from "@/app/product-variant/[slug]/components/variant-selector";
 import Footer from "@/components/common/footer";
 import { Header } from "@/components/common/header";
 import ProductList from "@/components/common/product-list";
 import { db } from "@/db";
 import { productTable } from "@/db/schema";
 import { formatCentsToBRL } from "@/helpers/money";
-
-import ProductActions from "@/app/product-variant/[slug]/components/product-actions";
-import VariantSelector from "@/app/product-variant/[slug]/components/variant-selector";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;

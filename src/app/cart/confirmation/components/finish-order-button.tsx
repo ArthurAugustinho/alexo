@@ -1,11 +1,11 @@
 "use client";
 
+import { loadStripe } from "@stripe/stripe-js";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { createCheckoutSession } from "@/actions/create-checkout-session";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,61 +17,94 @@ import {
 import { useFinishOrder } from "@/hooks/mutations/use-finish-order";
 
 const FinishOrderButton = () => {
-  const router = useRouter();
-  const [successDialogIsOpen, setSuccessDialogIsOpen] = useState(false);
+  const [errorDialogIsOpen, setErrorDialogIsOpen] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const finishOrderMutation = useFinishOrder();
+
   const handleFinishOrder = async () => {
+    setErrorDialogIsOpen(false);
     try {
-      await finishOrderMutation.mutateAsync();
-      setSuccessDialogIsOpen(true);
+      if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+        throw new Error("Stripe publishable key is not set");
+      }
+
+      const { orderId } = await finishOrderMutation.mutateAsync();
+
+      const checkoutSession = await createCheckoutSession({ orderId });
+
+      const stripe = await loadStripe(
+        process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+      );
+
+      if (!stripe || !checkoutSession.id) {
+        throw new Error("Payment provider not available");
+      }
+
+      setIsRedirecting(true);
+
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: checkoutSession.id,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
     } catch (err) {
-      // TODO: poderia exibir toast; por ora só mantém o dialog fechado.
-      setSuccessDialogIsOpen(false);
+      console.error(err);
+      setIsRedirecting(false);
+      setErrorDialogIsOpen(true);
     }
   };
-  const handleBackToStore = () => {
-    setSuccessDialogIsOpen(false);
-    router.push("/");
-  };
+
   return (
     <>
       <Button
         className="w-full rounded-full"
         size="lg"
         onClick={handleFinishOrder}
-        disabled={finishOrderMutation.isPending}
+        disabled={finishOrderMutation.isPending || isRedirecting}
       >
-        {finishOrderMutation.isPending && (
+        {(finishOrderMutation.isPending || isRedirecting) && (
           <Loader2 className="h-4 w-4 animate-spin" />
         )}
-        Finalizar compra
+        {isRedirecting ? "Redirecionando..." : "Finalizar compra"}
       </Button>
-      <Dialog open={successDialogIsOpen} onOpenChange={setSuccessDialogIsOpen}>
+
+      <Dialog open={errorDialogIsOpen} onOpenChange={setErrorDialogIsOpen}>
         <DialogContent className="text-center">
           <Image
             src="/illustration.svg"
-            alt="Success"
+            alt="Pagamento não confirmado"
             width={300}
             height={300}
             className="mx-auto"
           />
-          <DialogTitle className="mt-4 text-2xl">Pedido efetuado!</DialogTitle>
+          <DialogTitle className="mt-4 text-2xl">
+            Pagamento não confirmado
+          </DialogTitle>
           <DialogDescription className="font-medium">
-            Seu pedido foi efetuado com sucesso. Você pode acompanhar o status
-            na seção de “Meus Pedidos”.
+            Não conseguimos finalizar o pagamento. Tente novamente ou escolha
+            outro método.
           </DialogDescription>
 
           <DialogFooter>
-            <Button className="rounded-full" size="lg">
-              Ver meus pedidos
+            <Button
+              className="rounded-full"
+              size="lg"
+              onClick={() => {
+                setErrorDialogIsOpen(false);
+                handleFinishOrder();
+              }}
+            >
+              Tentar novamente
             </Button>
             <Button
               className="rounded-full"
               variant="outline"
               size="lg"
-              onClick={handleBackToStore}
+              onClick={() => setErrorDialogIsOpen(false)}
             >
-              Voltar para a loja
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>

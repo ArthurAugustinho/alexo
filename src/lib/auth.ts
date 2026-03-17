@@ -20,6 +20,14 @@ export const auth = betterAuth({
   }),
   user: {
     modelName: "userTable",
+    additionalFields: {
+      role: {
+        type: "string",
+        defaultValue: "customer",
+        input: false,
+        required: false,
+      },
+    },
   },
   session: {
     modelName: "sessionTable",
