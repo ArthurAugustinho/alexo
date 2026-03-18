@@ -107,3 +107,13 @@ export async function requireAdminSession() {
 
   return result;
 }
+
+export async function requireSuperAdminSessionOrThrow() {
+  const result = await getCurrentSessionWithRole();
+
+  if (!result.session?.user || !isSuperAdminRole(result.role)) {
+    throw new Error("Unauthorized");
+  }
+
+  return result;
+}

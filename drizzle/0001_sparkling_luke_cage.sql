@@ -1,0 +1,1 @@
+ALTER TABLE "product" ADD COLUMN "shipping_cost_in_cents" integer DEFAULT 0 NOT NULL;

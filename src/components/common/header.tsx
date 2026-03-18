@@ -80,7 +80,7 @@ export const Header = () => {
             </div>
           </SheetContent>
         </Sheet>
-        <Cart />
+        <Cart isAuthenticated={Boolean(session?.user)} />
       </div>
     </header>
   );

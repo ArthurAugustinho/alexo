@@ -20,6 +20,9 @@ export const adminProductSchema = z.object({
   priceInReais: z.coerce
     .number("Pre\u00e7o inv\u00e1lido.")
     .positive("O pre\u00e7o precisa ser maior que zero."),
+  shippingCostInReais: z.coerce
+    .number("Frete inv\u00e1lido.")
+    .min(0, "O frete n\u00e3o pode ser negativo."),
   imageUrl: z.url("Informe uma URL de imagem v\u00e1lida."),
 });
 

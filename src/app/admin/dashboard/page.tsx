@@ -35,6 +35,7 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
       description: product.description,
       categoryId: category.id,
       slug: product.slug,
+      shippingCostInCents: product.shippingCostInCents,
       variantsCount: product.variants.length,
       primaryVariant: product.variants[0]
         ? {

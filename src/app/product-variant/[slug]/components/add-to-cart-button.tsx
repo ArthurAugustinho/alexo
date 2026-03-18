@@ -31,12 +31,18 @@ const AddToCartButton = ({
     <Button
       className="rounded-full"
       size="lg"
+      type="button"
       variant="outline"
       disabled={isPending}
       onClick={() => mutate()}
     >
-      {isPending && <Loader2 className="animate-spin" />}
-      Adicionar à sacola
+      <span className="flex size-4 items-center justify-center">
+        <Loader2
+          aria-hidden="true"
+          className={isPending ? "size-4 animate-spin" : "size-4 opacity-0"}
+        />
+      </span>
+      <span>Adicionar à sacola</span>
     </Button>
   );
 };

@@ -18,8 +18,13 @@ import {
 } from "../ui/sheet";
 import CartItem from "./cart-item";
 
-export const Cart = () => {
-  const { data: cart } = useCart();
+type CartProps = {
+  isAuthenticated: boolean;
+};
+
+export const Cart = ({ isAuthenticated }: CartProps) => {
+  const { data: cart } = useCart({ enabled: isAuthenticated });
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -36,25 +41,42 @@ export const Cart = () => {
           <div className="flex h-full max-h-full flex-col overflow-hidden">
             <ScrollArea className="h-full">
               <div className="flex h-full flex-col gap-8">
-                {cart?.items.map((item) => (
-                  <CartItem
-                    key={item.id}
-                    id={item.id}
-                    productVariantId={item.productVariant.id}
-                    productName={item.productVariant.product.name}
-                    productVariantName={item.productVariant.name}
-                    productVariantImageUrl={item.productVariant.imageUrl}
-                    productVariantPriceInCents={
-                      item.productVariant.priceInCents
-                    }
-                    quantity={item.quantity}
-                  />
-                ))}
+                {!isAuthenticated ? (
+                  <div className="flex h-full flex-col items-center justify-center gap-4 py-10 text-center">
+                    <p className="text-muted-foreground text-sm">
+                      Faça login para visualizar e finalizar seu carrinho.
+                    </p>
+                    <Button asChild className="rounded-full">
+                      <Link href="/authentication">Entrar</Link>
+                    </Button>
+                  </div>
+                ) : cart?.items.length ? (
+                  cart.items.map((item) => (
+                    <CartItem
+                      key={item.id}
+                      id={item.id}
+                      productVariantId={item.productVariant.id}
+                      productName={item.productVariant.product.name}
+                      productVariantName={item.productVariant.name}
+                      productVariantImageUrl={item.productVariant.imageUrl}
+                      productVariantPriceInCents={
+                        item.productVariant.priceInCents
+                      }
+                      quantity={item.quantity}
+                    />
+                  ))
+                ) : (
+                  <div className="flex h-full items-center justify-center py-10 text-center">
+                    <p className="text-muted-foreground text-sm">
+                      Seu carrinho está vazio.
+                    </p>
+                  </div>
+                )}
               </div>
             </ScrollArea>
           </div>
 
-          {cart?.items && cart?.items.length > 0 && (
+          {isAuthenticated && cart?.items && cart.items.length > 0 && (
             <div className="flex flex-col gap-4">
               <Separator />
 

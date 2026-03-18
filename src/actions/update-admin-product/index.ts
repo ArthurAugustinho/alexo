@@ -119,6 +119,7 @@ export async function updateAdminProduct(
         name: payload.data.name,
         description: payload.data.description,
         slug: productSlug,
+        shippingCostInCents: Math.round(payload.data.shippingCostInReais * 100),
       })
       .where(eq(productTable.id, existingProduct.id));
 

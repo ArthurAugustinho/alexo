@@ -70,6 +70,7 @@ export type AdminCatalogProduct = {
   description: string;
   categoryId: string;
   slug: string;
+  shippingCostInCents: number;
   variantsCount: number;
   primaryVariant: {
     id: string;
@@ -134,6 +135,7 @@ function ProductEditorDialog({
       priceInReais: product?.primaryVariant
         ? product.primaryVariant.priceInCents / 100
         : 0,
+      shippingCostInReais: product ? product.shippingCostInCents / 100 : 0,
       imageUrl: product?.primaryVariant?.imageUrl ?? "",
     }),
     [categories, product],
@@ -314,21 +316,54 @@ function ProductEditorDialog({
 
               <FormField
                 control={form.control}
-                name="imageUrl"
+                name="shippingCostInReais"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Imagem</FormLabel>
+                    <FormLabel>Frete (R$)</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <ImageIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                        <Input className="rounded-xl pl-9" {...field} />
-                      </div>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        className="rounded-xl"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        disabled={field.disabled}
+                        value={
+                          typeof field.value === "number" ? field.value : ""
+                        }
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? 0
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Imagem</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <ImageIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                      <Input className="rounded-xl pl-9" {...field} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button
@@ -819,6 +854,12 @@ export function ProductManagement({
                               {product.primaryVariant
                                 ? formatBRL(product.primaryVariant.priceInCents)
                                 : "Preço não definido"}
+                            </p>
+                            <p className="text-muted-foreground text-sm">
+                              Frete:{" "}
+                              {product.shippingCostInCents > 0
+                                ? formatBRL(product.shippingCostInCents)
+                                : "Grátis"}
                             </p>
                           </div>
 

@@ -85,6 +85,18 @@ export const verificationTable = pgTable("verification", {
   ),
 });
 
+export const seasonalBannerTable = pgTable("seasonal_banner", {
+  id: uuid().primaryKey().defaultRandom(),
+  imageUrl: text("image_url").notNull(),
+  title: text().notNull(),
+  subtitle: text().notNull(),
+  linkUrl: text("link_url").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const categoryTable = pgTable("category", {
   id: uuid().primaryKey().defaultRandom(),
   name: text().notNull(),
@@ -104,6 +116,7 @@ export const productTable = pgTable("product", {
   name: text().notNull(),
   slug: text().notNull().unique(),
   description: text().notNull(),
+  shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -112,6 +125,7 @@ export const productRelations = relations(productTable, ({ one, many }) => ({
     fields: [productTable.categoryId],
     references: [categoryTable.id],
   }),
+  featuredEntries: many(featuredProductTable),
   variants: many(productVariantTable),
 }));
 
@@ -137,6 +151,26 @@ export const productVariantRelations = relations(
     }),
     cartItems: many(cartItemTable),
     orderItems: many(orderItemTable),
+  }),
+);
+
+export const featuredProductTable = pgTable("featured_products", {
+  id: uuid().primaryKey().defaultRandom(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => productTable.id, { onDelete: "cascade" })
+    .unique(),
+  position: integer("position").notNull().unique(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const featuredProductRelations = relations(
+  featuredProductTable,
+  ({ one }) => ({
+    product: one(productTable, {
+      fields: [featuredProductTable.productId],
+      references: [productTable.id],
+    }),
   }),
 );
 

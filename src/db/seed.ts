@@ -1,7 +1,12 @@
 import crypto from "crypto";
 
 import { db } from ".";
-import { categoryTable, productTable, productVariantTable } from "./schema";
+import {
+  categoryTable,
+  productTable,
+  productVariantTable,
+  seasonalBannerTable,
+} from "./schema";
 
 const productImages = {
   Mochila: {
@@ -536,16 +541,48 @@ const products = [
   },
 ];
 
+const currentYear = new Date().getFullYear();
+
+const seasonalBanners = [
+  {
+    imageUrl: "/banner-01.png",
+    title: "Coleção em destaque da estação",
+    subtitle:
+      "Explore peças selecionadas para compor uma vitrine com visual urbano e atual.",
+    linkUrl: "/category/camisetas",
+    startDate: new Date(currentYear, 0, 1),
+    endDate: new Date(currentYear, 11, 31, 23, 59, 59),
+  },
+  {
+    imageUrl: "/banner-02.png",
+    title: "Novidades para renovar o catálogo",
+    subtitle:
+      "Acompanhe os lançamentos mais recentes e descubra produtos recém-chegados à loja.",
+    linkUrl: "/category/tenis",
+    startDate: new Date(currentYear, 0, 1),
+    endDate: new Date(currentYear, 11, 31, 23, 59, 59),
+  },
+];
+
 async function main() {
   console.log("🌱 Iniciando o seeding do banco de dados...");
 
   try {
     // Limpar dados existentes
     console.log("🧹 Limpando dados existentes...");
+    await db.delete(seasonalBannerTable);
     await db.delete(productVariantTable);
     await db.delete(productTable);
     await db.delete(categoryTable);
     console.log("✅ Dados limpos com sucesso!");
+
+    console.log("ðŸ–¼ï¸ Criando banners sazonais...");
+    for (const bannerData of seasonalBanners) {
+      await db.insert(seasonalBannerTable).values({
+        id: crypto.randomUUID(),
+        ...bannerData,
+      });
+    }
 
     // Inserir categorias primeiro
     const categoryMap = new Map<string, string>();
@@ -618,7 +655,7 @@ async function main() {
       } produtos com ${products.reduce(
         (acc, p) => acc + p.variants.length,
         0,
-      )} variantes.`,
+      )} variantes e ${seasonalBanners.length} banners sazonais.`,
     );
   } catch (error) {
     console.error("❌ Erro durante o seeding:", error);

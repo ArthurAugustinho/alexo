@@ -81,6 +81,7 @@ export async function createAdminProduct(
         name: payload.data.name,
         description: payload.data.description,
         slug: productSlug,
+        shippingCostInCents: Math.round(payload.data.shippingCostInReais * 100),
       })
       .returning();
 

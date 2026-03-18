@@ -58,6 +58,11 @@ export function AdminShell({ children, user, role }: AdminShellProps) {
               </div>
 
               <div className="flex gap-2">
+                {role === "super_admin" ? (
+                  <Button asChild variant="outline">
+                    <Link href="/admin/vitrine/banners">Vitrine</Link>
+                  </Button>
+                ) : null}
                 <Button asChild variant="ghost">
                   <Link href="/">Ver loja</Link>
                 </Button>
