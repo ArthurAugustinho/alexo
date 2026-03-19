@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 
+import { normalizeSearch } from "@/helpers/normalize-search";
+
 const productSearchResultSchema = z.object({
   id: z.string().trim().min(1),
   name: z.string().trim().min(1),
@@ -19,10 +21,9 @@ export function useProductSearch(query: string) {
   const [isLoading, setIsLoading] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
   const debounceTimeoutRef = useRef<number | null>(null);
+  const normalizedQuery = normalizeSearch(query);
 
   useEffect(() => {
-    const trimmedQuery = query.trim();
-
     if (debounceTimeoutRef.current !== null) {
       window.clearTimeout(debounceTimeoutRef.current);
       debounceTimeoutRef.current = null;
@@ -33,7 +34,7 @@ export function useProductSearch(query: string) {
       abortControllerRef.current = null;
     }
 
-    if (trimmedQuery.length < 2) {
+    if (normalizedQuery.length < 2) {
       setResults([]);
       setIsLoading(false);
       return;
@@ -47,7 +48,7 @@ export function useProductSearch(query: string) {
 
       try {
         const response = await fetch(
-          `/api/search?q=${encodeURIComponent(trimmedQuery)}`,
+          `/api/search?q=${encodeURIComponent(normalizedQuery)}`,
           {
             signal: controller.signal,
             cache: "no-store",
@@ -90,9 +91,10 @@ export function useProductSearch(query: string) {
         abortControllerRef.current = null;
       }
     };
-  }, [query]);
+  }, [normalizedQuery]);
 
-  const isEmpty = query.trim().length >= 2 && !isLoading && results.length === 0;
+  const isEmpty =
+    normalizedQuery.length >= 2 && !isLoading && results.length === 0;
 
   return {
     results,
