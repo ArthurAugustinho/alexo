@@ -1,12 +1,14 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   integer,
   pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 
 export const userRoleEnum = pgEnum("user_role", [
@@ -22,6 +24,11 @@ export const productVariantSizeEnum = pgEnum("product_variant_size", [
   "G",
   "GG",
   "GGG",
+]);
+
+export const sizeTypeEnum = pgEnum("size_type", [
+  "alphabetic",
+  "numeric",
 ]);
 
 export const userTable = pgTable("user", {
@@ -125,6 +132,7 @@ export const productTable = pgTable("product", {
   name: text().notNull(),
   slug: text().notNull().unique(),
   description: text().notNull(),
+  sizeType: sizeTypeEnum("size_type").notNull().default("alphabetic"),
   shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -135,23 +143,51 @@ export const productRelations = relations(productTable, ({ one, many }) => ({
     references: [categoryTable.id],
   }),
   featuredEntries: many(featuredProductTable),
+  productSizes: many(productSizeTable),
   variants: many(productVariantTable),
 }));
 
-export const productVariantTable = pgTable("product_variant", {
+export const productSizeTable = pgTable("product_size", {
   id: uuid().primaryKey().defaultRandom(),
   productId: uuid("product_id")
     .notNull()
     .references(() => productTable.id, { onDelete: "cascade" }),
-  name: text().notNull(),
-  slug: text().notNull().unique(),
-  size: productVariantSizeEnum("size").notNull().default("M"),
-  color: text().notNull(),
-  priceInCents: integer("price_in_cents").notNull(),
-  imageUrl: text("image_url").notNull(),
-  isAvailable: boolean("is_available").notNull().default(true),
+  sizeValue: varchar("size_value", { length: 10 }).notNull(),
+  position: integer("position").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+export const productSizeRelations = relations(productSizeTable, ({ one }) => ({
+  product: one(productTable, {
+    fields: [productSizeTable.productId],
+    references: [productTable.id],
+  }),
+}));
+
+export const productVariantTable = pgTable(
+  "product_variant",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => productTable.id, { onDelete: "cascade" }),
+    name: text().notNull(),
+    slug: text().notNull().unique(),
+    size: varchar("size", { length: 10 }).notNull(),
+    color: text().notNull(),
+    priceInCents: integer("price_in_cents").notNull(),
+    imageUrl: text("image_url").notNull(),
+    stock: integer("stock").notNull().default(0),
+    isAvailable: boolean("is_available").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "product_variant_stock_non_negative",
+      sql`${table.stock} >= 0`,
+    ),
+  ],
+);
 
 export const productVariantRelations = relations(
   productVariantTable,

@@ -93,9 +93,12 @@ export async function createAdminProduct(
       productId: createdProduct.id,
       name: payload.data.variantName,
       color: payload.data.variantColor,
+      size: "M",
       imageUrl: payload.data.imageUrl,
       priceInCents: Math.round(payload.data.priceInReais * 100),
       slug: variantSlug,
+      stock: 1,
+      isAvailable: true,
     });
   });
 

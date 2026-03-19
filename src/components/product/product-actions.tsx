@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MinusIcon, PlusIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { addProductToCart } from "@/actions/add-cart-product";
@@ -11,16 +11,12 @@ import { type ProductVariantModel } from "@/lib/product-variant-schema";
 import { cn } from "@/lib/utils";
 
 type ProductActionsProps = {
-  isSelectedVariantAvailable: boolean;
-  selectedColor: string | null;
-  selectedSize: string | null;
+  isSelectionComplete: boolean;
   selectedVariant: ProductVariantModel | null;
 };
 
 const ProductActions = ({
-  isSelectedVariantAvailable,
-  selectedColor,
-  selectedSize,
+  isSelectionComplete,
   selectedVariant,
 }: ProductActionsProps) => {
   const queryClient = useQueryClient();
@@ -29,8 +25,8 @@ const ProductActions = ({
   const { mutate, isPending } = useMutation({
     mutationKey: ["addProductToCart", selectedVariant?.id, quantity],
     mutationFn: async () => {
-      if (!selectedVariant) {
-        throw new Error("Selecione uma cor e um tamanho para continuar");
+      if (!selectedVariant || selectedVariant.stock <= 0) {
+        throw new Error("Selecione um tamanho disponivel para continuar");
       }
 
       return addProductToCart({
@@ -54,24 +50,25 @@ const ProductActions = ({
     },
   });
 
-  const isSelectionComplete = Boolean(selectedColor && selectedSize && selectedVariant);
-  const canAddToCart = isSelectionComplete && isSelectedVariantAvailable;
-  const helperMessage =
-    isSelectionComplete && !isSelectedVariantAvailable
-      ? "Indisponível no momento."
-      : inlineError;
+  const canAddToCart = isSelectionComplete;
+
+  useEffect(() => {
+    if (isSelectionComplete) {
+      setInlineError(null);
+    }
+  }, [isSelectionComplete]);
 
   function handleAddToCart() {
-    if (!isSelectionComplete) {
-      setInlineError("Selecione uma cor e um tamanho para continuar");
+    if (!isSelectionComplete || (selectedVariant?.stock ?? 0) <= 0) {
+      const message = "Selecione um tamanho disponivel para continuar";
+      setInlineError(message);
+      toast.warning(message, {
+        duration: 3000,
+      });
       return;
     }
 
-    if (!isSelectedVariantAvailable) {
-      setInlineError("Indisponível no momento.");
-      return;
-    }
-
+    setInlineError(null);
     mutate();
   }
 
@@ -85,7 +82,11 @@ const ProductActions = ({
               type="button"
               size="icon"
               variant="ghost"
-              onClick={() => setQuantity((previous) => (previous > 1 ? previous - 1 : previous))}
+              onClick={() =>
+                setQuantity((previous) =>
+                  previous > 1 ? previous - 1 : previous,
+                )
+              }
             >
               <MinusIcon />
             </Button>
@@ -111,7 +112,7 @@ const ProductActions = ({
             "rounded-full transition-opacity",
             !canAddToCart && "cursor-not-allowed opacity-60",
           )}
-          disabled={!canAddToCart || isPending}
+          disabled={isPending}
           onClick={handleAddToCart}
         >
           <span className="flex size-4 items-center justify-center">
@@ -123,8 +124,8 @@ const ProductActions = ({
           <span>Adicionar a sacola</span>
         </Button>
 
-        {helperMessage ? (
-          <p className="text-sm text-destructive">{helperMessage}</p>
+        {inlineError ? (
+          <p className="text-destructive text-sm">{inlineError}</p>
         ) : null}
 
         <Button className="rounded-full" size="lg" type="button">
@@ -136,4 +137,3 @@ const ProductActions = ({
 };
 
 export default ProductActions;
-

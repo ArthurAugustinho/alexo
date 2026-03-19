@@ -129,6 +129,7 @@ export async function updateAdminProduct(
         .set({
           name: payload.data.variantName,
           color: payload.data.variantColor,
+          size: primaryVariant.size,
           imageUrl: payload.data.imageUrl,
           priceInCents: Math.round(payload.data.priceInReais * 100),
           slug: variantSlug,
@@ -142,9 +143,12 @@ export async function updateAdminProduct(
       productId: existingProduct.id,
       name: payload.data.variantName,
       color: payload.data.variantColor,
+      size: "M",
       imageUrl: payload.data.imageUrl,
       priceInCents: Math.round(payload.data.priceInReais * 100),
       slug: variantSlug,
+      stock: 1,
+      isAvailable: true,
     });
   });
 

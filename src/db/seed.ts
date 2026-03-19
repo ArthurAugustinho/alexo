@@ -641,9 +641,12 @@ async function main() {
           name: variantData.color,
           productId: productId,
           color: variantData.color,
+          size: "M",
           imageUrl: variantImages[0] || "",
           priceInCents: variantData.price,
           slug: generateSlug(`${productData.name}-${variantData.color}`),
+          stock: 10,
+          isAvailable: true,
         });
       }
     }

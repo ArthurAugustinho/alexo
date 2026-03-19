@@ -8,19 +8,11 @@ import ProductList from "@/components/common/product-list";
 import ProductDetailsClient from "@/components/product/product-details-client";
 import { db } from "@/db";
 import { productTable } from "@/db/schema";
+import { getProductBySlug } from "@/lib/queries/products";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ variant?: string }>;
-}
-
-async function getProductBySlug(slug: string) {
-  return db.query.productTable.findFirst({
-    where: eq(productTable.slug, slug),
-    with: {
-      variants: true,
-    },
-  });
 }
 
 function truncateDescription(description: string, maxLength = 160) {
@@ -44,7 +36,7 @@ export async function generateMetadata({
   }
 
   const preferredVariant =
-    product.variants.find((variant) => variant.isAvailable) ?? null;
+    product.variants.find((variant) => variant.stock > 0) ?? product.variants[0];
   const baseAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   const canonicalUrl = baseAppUrl
     ? `${baseAppUrl}/product/${product.slug}`
@@ -105,6 +97,8 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
           initialVariantSlug={variantSlug}
           productDescription={product.description}
           productName={product.name}
+          sizeType={product.sizeType}
+          productSizes={product.productSizes}
           variants={product.variants}
         />
 

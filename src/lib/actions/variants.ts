@@ -4,20 +4,20 @@ import { asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
-import { productTable, productVariantTable } from "@/db/schema";
+import { productSizeTable, productTable, productVariantTable } from "@/db/schema";
 import { requireAdminSession } from "@/lib/admin-auth";
-import { generateSlug } from "@/lib/slug";
-
 import {
   type CreateVariantInput,
   createVariantSchema,
   type DeleteVariantInput,
   deleteVariantSchema,
-  type ToggleVariantAvailabilityInput,
-  toggleVariantAvailabilitySchema,
   type UpdateVariantInput,
   updateVariantSchema,
-} from "../admin-variant-schema";
+  type UpdateVariantStockInput,
+  updateVariantStockSchema,
+} from "@/lib/admin-variant-schema";
+import { PRODUCT_VARIANT_SIZE_VALUES, type ProductSizeType } from "@/lib/product-variant-schema";
+import { generateSlug } from "@/lib/slug";
 
 type VariantActionResult = {
   success: boolean;
@@ -55,6 +55,27 @@ function buildVariantSlugLabel(
   return generateSlug(`${productName}-${color}-${size}`) || "variacao";
 }
 
+function getAllowedSizesForProduct(product: {
+  sizeType: ProductSizeType;
+  productSizes: { sizeValue: string }[];
+}) {
+  if (product.sizeType === "numeric") {
+    return product.productSizes.map((productSize) => productSize.sizeValue);
+  }
+
+  return [...PRODUCT_VARIANT_SIZE_VALUES];
+}
+
+function isSizeAllowedForProduct(
+  product: {
+    sizeType: ProductSizeType;
+    productSizes: { sizeValue: string }[];
+  },
+  size: string,
+) {
+  return getAllowedSizesForProduct(product).includes(size);
+}
+
 async function getUniqueVariantSlug(
   baseLabel: string,
   excludeVariantId?: string,
@@ -86,17 +107,17 @@ function revalidateVariantPaths(params: {
   revalidatePath(`/product/${params.productSlug}`);
 }
 
-export async function toggleAvailability(
-  input: ToggleVariantAvailabilityInput,
+export async function updateVariantStock(
+  input: UpdateVariantStockInput,
 ): Promise<VariantActionResult> {
-  const payload = toggleVariantAvailabilitySchema.safeParse(input);
+  const payload = updateVariantStockSchema.safeParse(input);
 
   if (!payload.success) {
     return {
       success: false,
       message: getValidationErrorMessage(
         payload.error.issues,
-        "Variante inválida.",
+        "Estoque invalido.",
       ),
     };
   }
@@ -113,14 +134,15 @@ export async function toggleAvailability(
   if (!existingVariant) {
     return {
       success: false,
-      message: "Variante não encontrada.",
+      message: "Variante nao encontrada.",
     };
   }
 
   await db
     .update(productVariantTable)
     .set({
-      isAvailable: payload.data.isAvailable,
+      stock: payload.data.stock,
+      isAvailable: payload.data.stock > 0,
     })
     .where(eq(productVariantTable.id, existingVariant.id));
 
@@ -131,9 +153,7 @@ export async function toggleAvailability(
 
   return {
     success: true,
-    message: payload.data.isAvailable
-      ? "Variante marcada como disponível."
-      : "Variante marcada como indisponível.",
+    message: "Estoque atualizado com sucesso.",
   };
 }
 
@@ -147,7 +167,7 @@ export async function createVariant(
       success: false,
       message: getValidationErrorMessage(
         payload.error.issues,
-        "Dados da variante inválidos.",
+        "Dados da variante invalidos.",
       ),
     };
   }
@@ -157,6 +177,9 @@ export async function createVariant(
   const product = await db.query.productTable.findFirst({
     where: eq(productTable.id, payload.data.productId),
     with: {
+      productSizes: {
+        orderBy: [asc(productSizeTable.position)],
+      },
       variants: {
         orderBy: [asc(productVariantTable.createdAt)],
       },
@@ -166,14 +189,24 @@ export async function createVariant(
   if (!product) {
     return {
       success: false,
-      message: "Produto não encontrado.",
+      message: "Produto nao encontrado.",
+    };
+  }
+
+  if (!isSizeAllowedForProduct(product, payload.data.size)) {
+    return {
+      success: false,
+      message:
+        product.sizeType === "numeric"
+          ? "Selecione um tamanho cadastrado na grade numerica do produto."
+          : "Selecione um tamanho alfabetico valido.",
     };
   }
 
   if (hasVariantConflict(product.variants, payload.data.color, payload.data.size)) {
     return {
       success: false,
-      message: "Já existe uma variante com essa combinação de cor e tamanho.",
+      message: "Ja existe uma variante com essa combinacao de cor e tamanho.",
     };
   }
 
@@ -182,7 +215,7 @@ export async function createVariant(
   if (!baseVariant) {
     return {
       success: false,
-      message: "O produto precisa ter uma variante base para herdar o preço.",
+      message: "O produto precisa ter uma variante base para herdar o preco.",
     };
   }
 
@@ -198,7 +231,8 @@ export async function createVariant(
     size: payload.data.size,
     imageUrl: payload.data.imageUrl,
     priceInCents: baseVariant.priceInCents,
-    isAvailable: payload.data.isAvailable,
+    stock: payload.data.stock,
+    isAvailable: payload.data.stock > 0,
   });
 
   revalidateVariantPaths({
@@ -222,7 +256,7 @@ export async function updateVariant(
       success: false,
       message: getValidationErrorMessage(
         payload.error.issues,
-        "Dados da variante inválidos.",
+        "Dados da variante invalidos.",
       ),
     };
   }
@@ -234,6 +268,9 @@ export async function updateVariant(
     with: {
       product: {
         with: {
+          productSizes: {
+            orderBy: [asc(productSizeTable.position)],
+          },
           variants: {
             orderBy: [asc(productVariantTable.createdAt)],
           },
@@ -245,14 +282,24 @@ export async function updateVariant(
   if (!existingVariant) {
     return {
       success: false,
-      message: "Variante não encontrada.",
+      message: "Variante nao encontrada.",
     };
   }
 
   if (payload.data.productId !== existingVariant.productId) {
     return {
       success: false,
-      message: "Produto inválido para esta variante.",
+      message: "Produto invalido para esta variante.",
+    };
+  }
+
+  if (!isSizeAllowedForProduct(existingVariant.product, payload.data.size)) {
+    return {
+      success: false,
+      message:
+        existingVariant.product.sizeType === "numeric"
+          ? "Selecione um tamanho cadastrado na grade numerica do produto."
+          : "Selecione um tamanho alfabetico valido.",
     };
   }
 
@@ -266,7 +313,7 @@ export async function updateVariant(
   ) {
     return {
       success: false,
-      message: "Já existe uma variante com essa combinação de cor e tamanho.",
+      message: "Ja existe uma variante com essa combinacao de cor e tamanho.",
     };
   }
 
@@ -289,7 +336,8 @@ export async function updateVariant(
       color: payload.data.color,
       size: payload.data.size,
       imageUrl: payload.data.imageUrl,
-      isAvailable: payload.data.isAvailable,
+      stock: payload.data.stock,
+      isAvailable: payload.data.stock > 0,
       slug: nextSlug,
     })
     .where(eq(productVariantTable.id, existingVariant.id));
@@ -315,7 +363,7 @@ export async function deleteVariant(
       success: false,
       message: getValidationErrorMessage(
         payload.error.issues,
-        "Variante inválida.",
+        "Variante invalida.",
       ),
     };
   }
@@ -338,7 +386,7 @@ export async function deleteVariant(
   if (!existingVariant) {
     return {
       success: false,
-      message: "Variante não encontrada.",
+      message: "Variante nao encontrada.",
     };
   }
 
@@ -357,7 +405,7 @@ export async function deleteVariant(
     return {
       success: false,
       message:
-        "Esta variante não pode ser excluída porque já possui pedidos vinculados.",
+        "Esta variante nao pode ser excluida porque ja possui pedidos vinculados.",
     };
   }
 
@@ -368,6 +416,6 @@ export async function deleteVariant(
 
   return {
     success: true,
-    message: "Variante excluída com sucesso.",
+    message: "Variante excluida com sucesso.",
   };
 }

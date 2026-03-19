@@ -4,6 +4,9 @@ import { formatCentsToBRL } from "@/helpers/money";
 import { useVariantSelector } from "@/hooks/use-variant-selector";
 import {
   getPreferredVariant,
+  productSizeListSchema,
+  type ProductSizeModel,
+  type ProductSizeType,
   productVariantListSchema,
   type ProductVariantModel,
 } from "@/lib/product-variant-schema";
@@ -16,6 +19,8 @@ type ProductDetailsClientProps = {
   initialVariantSlug?: string;
   productDescription: string;
   productName: string;
+  sizeType: ProductSizeType;
+  productSizes: ProductSizeModel[];
   variants: ProductVariantModel[];
 };
 
@@ -23,22 +28,27 @@ const ProductDetailsClient = ({
   initialVariantSlug,
   productDescription,
   productName,
+  sizeType,
+  productSizes,
   variants,
 }: ProductDetailsClientProps) => {
   const parsedVariants = productVariantListSchema.parse(variants);
+  const parsedProductSizes = productSizeListSchema.parse(productSizes);
   const {
+    allSizesForColor,
     colorOptions,
     displayImageUrl,
-    isSelectedVariantAvailable,
+    isSelectionComplete,
     selectedColor,
     selectedSize,
     selectedVariant,
     selectColor,
     selectSize,
-    sizeOptions,
   } = useVariantSelector({
     initialVariantSlug,
     variants: parsedVariants,
+    sizeType,
+    productSizes: parsedProductSizes,
   });
 
   const fallbackVariant = getPreferredVariant(parsedVariants);
@@ -55,8 +65,8 @@ const ProductDetailsClient = ({
       />
 
       <VariantSelector
+        allSizesForColor={allSizesForColor}
         colorOptions={colorOptions}
-        sizeOptions={sizeOptions}
         selectedColor={selectedColor}
         selectedSize={selectedSize}
         onColorSelect={selectColor}
@@ -76,9 +86,7 @@ const ProductDetailsClient = ({
       </div>
 
       <ProductActions
-        isSelectedVariantAvailable={isSelectedVariantAvailable}
-        selectedColor={selectedColor}
-        selectedSize={selectedSize}
+        isSelectionComplete={isSelectionComplete}
         selectedVariant={selectedVariant}
       />
 
@@ -90,4 +98,3 @@ const ProductDetailsClient = ({
 };
 
 export default ProductDetailsClient;
-

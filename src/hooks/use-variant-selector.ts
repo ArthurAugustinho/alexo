@@ -3,8 +3,11 @@
 import { useMemo, useState } from "react";
 
 import {
-  compareProductVariantSizes,
   getPreferredVariant,
+  PRODUCT_VARIANT_SIZE_VALUES,
+  productSizeListSchema,
+  type ProductSizeModel,
+  type ProductSizeType,
   productVariantListSchema,
   type ProductVariantModel,
   type ProductVariantSize,
@@ -16,22 +19,32 @@ type VariantColorOption = {
 };
 
 type VariantSizeOption = {
-  size: ProductVariantSize;
+  sizeValue: ProductVariantSize;
+  stock: number;
   isAvailable: boolean;
+  variantId: string | null;
 };
 
 type UseVariantSelectorParams = {
   initialVariantSlug?: string;
   variants: ProductVariantModel[];
+  sizeType: ProductSizeType;
+  productSizes: ProductSizeModel[];
 };
 
 export function useVariantSelector({
   initialVariantSlug,
   variants,
+  sizeType,
+  productSizes,
 }: UseVariantSelectorParams) {
   const parsedVariants = useMemo(
     () => productVariantListSchema.parse(variants),
     [variants],
+  );
+  const parsedProductSizes = useMemo(
+    () => productSizeListSchema.parse(productSizes),
+    [productSizes],
   );
 
   const fallbackVariant = useMemo(
@@ -42,8 +55,9 @@ export function useVariantSelector({
   const initialVariant = useMemo(
     () =>
       initialVariantSlug
-        ? parsedVariants.find((variant) => variant.slug === initialVariantSlug) ??
-          null
+        ? (parsedVariants.find(
+            (variant) => variant.slug === initialVariantSlug,
+          ) ?? null)
         : null,
     [initialVariantSlug, parsedVariants],
   );
@@ -66,26 +80,40 @@ export function useVariantSelector({
         .map((color) => ({
           color,
           isAvailable: parsedVariants.some(
-            (variant) => variant.color === color && variant.isAvailable,
+            (variant) => variant.color === color && variant.stock > 0,
           ),
         })),
     [parsedVariants],
   );
 
-  const sizeOptions = useMemo<VariantSizeOption[]>(() => {
+  const baseSizes = useMemo<ProductVariantSize[]>(() => {
+    if (sizeType === "numeric") {
+      return parsedProductSizes.map((productSize) => productSize.sizeValue);
+    }
+
+    return [...PRODUCT_VARIANT_SIZE_VALUES];
+  }, [parsedProductSizes, sizeType]);
+
+  const allSizesForColor = useMemo<VariantSizeOption[]>(() => {
     const scopedVariants = selectedColor
       ? parsedVariants.filter((variant) => variant.color === selectedColor)
       : parsedVariants;
 
-    return Array.from(new Set(scopedVariants.map((variant) => variant.size)))
-      .sort(compareProductVariantSizes)
-      .map((size) => ({
-        size,
-        isAvailable: scopedVariants.some(
-          (variant) => variant.size === size && variant.isAvailable,
-        ),
-      }));
-  }, [parsedVariants, selectedColor]);
+    return baseSizes.map((sizeValue) => {
+      const matchingVariants = scopedVariants.filter(
+        (variant) => variant.size === sizeValue,
+      );
+      const preferredVariant = getPreferredVariant(matchingVariants);
+      const stock = preferredVariant?.stock ?? 0;
+
+      return {
+        sizeValue,
+        stock,
+        isAvailable: stock > 0,
+        variantId: preferredVariant?.id ?? null,
+      };
+    });
+  }, [baseSizes, parsedVariants, selectedColor]);
 
   const selectedVariant = useMemo(() => {
     if (!selectedColor || !selectedSize) {
@@ -100,6 +128,11 @@ export function useVariantSelector({
     );
   }, [parsedVariants, selectedColor, selectedSize]);
 
+  const isSelectionComplete = useMemo(
+    () => Boolean(selectedColor && selectedSize && (selectedVariant?.stock ?? 0) > 0),
+    [selectedColor, selectedSize, selectedVariant?.stock],
+  );
+
   const displayImageUrl = useMemo(() => {
     if (selectedVariant) {
       return selectedVariant.imageUrl;
@@ -108,7 +141,10 @@ export function useVariantSelector({
     if (selectedColor) {
       return (
         parsedVariants.find((variant) => variant.color === selectedColor)
-          ?.imageUrl ?? initialVariant?.imageUrl ?? fallbackVariant?.imageUrl ?? ""
+          ?.imageUrl ??
+        initialVariant?.imageUrl ??
+        fallbackVariant?.imageUrl ??
+        ""
       );
     }
 
@@ -134,25 +170,27 @@ export function useVariantSelector({
     setSelectedSize(null);
   }
 
-  function selectSize(size: ProductVariantSize) {
-    const nextSize = sizeOptions.find((sizeOption) => sizeOption.size === size);
+  function selectSize(sizeValue: ProductVariantSize) {
+    const nextSize = allSizesForColor.find(
+      (sizeOption) => sizeOption.sizeValue === sizeValue,
+    );
 
-    if (!nextSize?.isAvailable) {
+    if (!nextSize) {
       return;
     }
 
-    setSelectedSize(size);
+    setSelectedSize(sizeValue);
   }
 
   return {
+    allSizesForColor,
     colorOptions,
     displayImageUrl,
-    isSelectedVariantAvailable: selectedVariant?.isAvailable ?? false,
+    isSelectionComplete,
     selectedColor,
     selectedSize,
     selectedVariant,
     selectColor,
     selectSize,
-    sizeOptions,
   };
 }

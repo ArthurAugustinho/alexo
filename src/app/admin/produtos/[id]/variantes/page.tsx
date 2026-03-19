@@ -26,7 +26,7 @@ export default async function AdminProductVariantsPage({
   }
 
   const availableVariantsCount = data.variants.filter(
-    (variant) => variant.isAvailable,
+    (variant) => variant.stock > 0,
   ).length;
 
   return (
@@ -46,9 +46,8 @@ export default async function AdminProductVariantsPage({
                 Variantes de {data.product.name}
               </h1>
               <p className="text-muted-foreground max-w-2xl">
-                Gerencie cor, tamanho, imagem e disponibilidade de compra para
-                cada variante sem impactar os registros históricos já
-                cadastrados.
+                Gerencie cor, tamanho, imagem e estoque por variante sem
+                impactar os registros historicos ja cadastrados.
               </p>
             </div>
           </div>
@@ -58,14 +57,24 @@ export default async function AdminProductVariantsPage({
               {data.variants.length} variantes
             </Badge>
             <Badge className="rounded-full px-3 py-1">
-              {availableVariantsCount} disponíveis
+              {availableVariantsCount} com estoque
             </Badge>
-            <VariantForm mode="create" productId={data.product.id} />
+            <VariantForm
+              mode="create"
+              productId={data.product.id}
+              sizeType={data.product.sizeType}
+              productSizes={data.product.productSizes}
+            />
           </div>
         </div>
       </section>
 
-      <VariantTable productId={data.product.id} variants={data.variants} />
+      <VariantTable
+        productId={data.product.id}
+        sizeType={data.product.sizeType}
+        productSizes={data.product.productSizes}
+        variants={data.variants}
+      />
     </div>
   );
 }

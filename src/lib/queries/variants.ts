@@ -1,9 +1,13 @@
 import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { productTable, productVariantTable } from "@/db/schema";
+import { productSizeTable, productTable, productVariantTable } from "@/db/schema";
 import {
-  compareProductVariantSizes,
+  compareProductSizeValues,
+  productSizeListSchema,
+  type ProductSizeModel,
+  type ProductSizeType,
+  productSizeTypeSchema,
   productVariantListSchema,
   type ProductVariantModel,
 } from "@/lib/product-variant-schema";
@@ -16,6 +20,8 @@ export type ProductVariantsByProductId = {
     name: string;
     slug: string;
     description: string;
+    sizeType: ProductSizeType;
+    productSizes: ProductSizeModel[];
   };
   variants: AdminVariantListItem[];
 };
@@ -26,6 +32,9 @@ export async function getVariantsByProductId(
   const product = await db.query.productTable.findFirst({
     where: eq(productTable.id, productId),
     with: {
+      productSizes: {
+        orderBy: [asc(productSizeTable.position)],
+      },
       variants: {
         orderBy: [asc(productVariantTable.color), asc(productVariantTable.createdAt)],
       },
@@ -36,6 +45,8 @@ export async function getVariantsByProductId(
     return null;
   }
 
+  const sizeType = productSizeTypeSchema.parse(product.sizeType);
+  const productSizes = productSizeListSchema.parse(product.productSizes);
   const variants = [...productVariantListSchema.parse(product.variants)].sort(
     (leftVariant, rightVariant) => {
       const colorComparison = leftVariant.color.localeCompare(
@@ -48,10 +59,12 @@ export async function getVariantsByProductId(
         return colorComparison;
       }
 
-      const sizeComparison = compareProductVariantSizes(
-        leftVariant.size,
-        rightVariant.size,
-      );
+      const sizeComparison = compareProductSizeValues({
+        firstSize: leftVariant.size,
+        secondSize: rightVariant.size,
+        sizeType,
+        productSizes,
+      });
 
       if (sizeComparison !== 0) {
         return sizeComparison;
@@ -67,6 +80,8 @@ export async function getVariantsByProductId(
       name: product.name,
       slug: product.slug,
       description: product.description,
+      sizeType,
+      productSizes,
     },
     variants,
   };

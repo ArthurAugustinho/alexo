@@ -20,26 +20,25 @@ import {
   type AdminCategoryInput,
   adminCategorySchema,
 } from "@/actions/admin-category/schema";
-import {
-  type AdminProductFormValues,
-  type AdminProductInput,
-  adminProductSchema,
-} from "@/actions/admin-product/schema";
 import { createAdminCategory } from "@/actions/create-admin-category";
-import { createAdminProduct } from "@/actions/create-admin-product";
 import { deleteAdminCategory } from "@/actions/delete-admin-category";
-import { deleteAdminProduct } from "@/actions/delete-admin-product";
 import { updateAdminCategory } from "@/actions/update-admin-category";
-import { updateAdminProduct } from "@/actions/update-admin-product";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { deleteAdminProduct } from "@/lib/actions/products";
+import {
+  type ProductSizeModel,
+  type ProductSizeType,
+} from "@/lib/product-variant-schema";
+import { cn } from "@/lib/utils";
+
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "../ui/card";
 import {
   Dialog,
   DialogClose,
@@ -49,7 +48,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "../ui/dialog";
 import {
   Form,
   FormControl,
@@ -57,11 +56,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
+} from "../ui/form";
+import { Input } from "../ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { ProductForm } from "./product-form";
 
 type DashboardRole = "admin" | "super_admin";
 
@@ -71,12 +69,23 @@ export type AdminCatalogProduct = {
   description: string;
   categoryId: string;
   slug: string;
+  sizeType: ProductSizeType;
+  productSizes: ProductSizeModel[];
   shippingCostInCents: number;
   variantsCount: number;
+  variants: Array<{
+    id: string;
+    color: string;
+    size: string;
+    stock: number;
+    imageUrl: string;
+  }>;
   primaryVariant: {
     id: string;
     name: string;
     color: string;
+    size: string;
+    stock: number;
     priceInCents: number;
     imageUrl: string;
   } | null;
@@ -120,52 +129,7 @@ function ProductEditorDialog({
   product,
   trigger,
 }: ProductEditorDialogProps) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const defaultValues = useMemo<AdminProductFormValues>(
-    () => ({
-      productId: product?.id,
-      primaryVariantId: product?.primaryVariant?.id,
-      name: product?.name ?? "",
-      description: product?.description ?? "",
-      categoryId: product?.categoryId ?? categories[0]?.id ?? "",
-      variantName: product?.primaryVariant?.name ?? "",
-      variantColor: product?.primaryVariant?.color ?? "",
-      priceInReais: product?.primaryVariant
-        ? product.primaryVariant.priceInCents / 100
-        : 0,
-      shippingCostInReais: product ? product.shippingCostInCents / 100 : 0,
-      imageUrl: product?.primaryVariant?.imageUrl ?? "",
-    }),
-    [categories, product],
-  );
-
-  const form = useForm<AdminProductFormValues, unknown, AdminProductInput>({
-    resolver: zodResolver(adminProductSchema),
-    defaultValues,
-  });
-  useEffect(() => {
-    form.reset(defaultValues);
-  }, [defaultValues, form]);
-
-  function onSubmit(values: AdminProductInput) {
-    startTransition(async () => {
-      const action =
-        mode === "create" ? createAdminProduct : updateAdminProduct;
-      const result = await action(values);
-
-      if (!result.success) {
-        toast.error(result.message);
-        return;
-      }
-
-      toast.success(result.message);
-      setIsOpen(false);
-      router.refresh();
-    });
-  }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -184,203 +148,18 @@ function ProductEditorDialog({
             {mode === "create" ? "Adicionar produto" : "Editar produto"}
           </DialogTitle>
           <DialogDescription>
-            Cadastre os dados principais do produto e a variação de destaque.
+            Cadastre os dados principais, o tipo de tamanho e a variante base
+            usada para iniciar o produto no catalogo.
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-            <div className="grid gap-5 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do produto</FormLabel>
-                    <FormControl>
-                      <Input className="rounded-xl" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="categoryId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categoria</FormLabel>
-                    <FormControl>
-                      <select
-                        className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none focus-visible:ring-[3px]"
-                        {...field}
-                      >
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      className="rounded-2xl"
-                      placeholder="Descreva os diferenciais do produto."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="variantName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome da variação</FormLabel>
-                    <FormControl>
-                      <Input
-                        className="rounded-xl"
-                        placeholder="Ex: Preto / Padrão"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="variantColor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cor</FormLabel>
-                    <FormControl>
-                      <Input className="rounded-xl" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="priceInReais"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Preço (R$)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="rounded-xl"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        disabled={field.disabled}
-                        value={
-                          typeof field.value === "number" ? field.value : ""
-                        }
-                        onChange={(event) =>
-                          field.onChange(
-                            event.target.value === ""
-                              ? 0
-                              : Number(event.target.value),
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="shippingCostInReais"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Frete (R$)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        className="rounded-xl"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        disabled={field.disabled}
-                        value={
-                          typeof field.value === "number" ? field.value : ""
-                        }
-                        onChange={(event) =>
-                          field.onChange(
-                            event.target.value === ""
-                              ? 0
-                              : Number(event.target.value),
-                          )
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Imagem</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <ImageIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                      <Input className="rounded-xl pl-9" {...field} />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-xl"
-                onClick={() => setIsOpen(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" className="rounded-xl" disabled={isPending}>
-                {mode === "create" ? "Salvar produto" : "Salvar alterações"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <ProductForm
+          categories={categories}
+          mode={mode}
+          product={product}
+          onCancel={() => setIsOpen(false)}
+          onSuccess={() => setIsOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -446,7 +225,7 @@ function CategoryEditorDialog({
             {mode === "create" ? "Adicionar categoria" : "Editar categoria"}
           </DialogTitle>
           <DialogDescription>
-            Defina o nome da categoria. O slug é atualizado automaticamente.
+            Defina o nome da categoria. O slug e atualizado automaticamente.
           </DialogDescription>
         </DialogHeader>
 
@@ -480,7 +259,7 @@ function CategoryEditorDialog({
                 Cancelar
               </Button>
               <Button type="submit" className="rounded-xl" disabled={isPending}>
-                {mode === "create" ? "Salvar categoria" : "Salvar alterações"}
+                {mode === "create" ? "Salvar categoria" : "Salvar alteracoes"}
               </Button>
             </DialogFooter>
           </form>
@@ -520,7 +299,7 @@ function DeleteCategoryDialog({ categoryId }: { categoryId: string }) {
         <DialogHeader>
           <DialogTitle>Excluir categoria</DialogTitle>
           <DialogDescription>
-            Esta ação remove a categoria apenas se ela não possuir produtos
+            Esta acao remove a categoria apenas se ela nao possuir produtos
             vinculados.
           </DialogDescription>
         </DialogHeader>
@@ -536,7 +315,7 @@ function DeleteCategoryDialog({ categoryId }: { categoryId: string }) {
             onClick={handleDelete}
             disabled={isPending}
           >
-            Confirmar exclusão
+            Confirmar exclusao
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -574,8 +353,8 @@ function DeleteProductDialog({ productId }: { productId: string }) {
         <DialogHeader>
           <DialogTitle>Excluir produto</DialogTitle>
           <DialogDescription>
-            Esta ação remove o produto e suas variações. Se ele já estiver em
-            pedidos, a exclusão será bloqueada.
+            Esta acao remove o produto e suas variantes. Se ele ja estiver em
+            pedidos, a exclusao sera bloqueada.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -590,11 +369,35 @@ function DeleteProductDialog({ productId }: { productId: string }) {
             onClick={handleDelete}
             disabled={isPending}
           >
-            Confirmar exclusão
+            Confirmar exclusao
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ProductSizeSummary({
+  sizeType,
+  productSizes,
+}: Pick<AdminCatalogProduct, "sizeType" | "productSizes">) {
+  if (sizeType === "numeric") {
+    const sizeLabel =
+      productSizes.length > 0
+        ? productSizes.map((size) => size.sizeValue).join(", ")
+        : "Sem grade";
+
+    return (
+      <p className="text-muted-foreground text-sm">
+        Grade numerica: {sizeLabel}
+      </p>
+    );
+  }
+
+  return (
+    <p className="text-muted-foreground text-sm">
+      Grade alfabetica: PP, P, M, G, GG, GGG
+    </p>
   );
 }
 
@@ -606,9 +409,9 @@ export function CategoryManagement({
     <Card className="border-border/70 bg-background/95 rounded-3xl shadow-sm">
       <CardHeader className="gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
-          <CardTitle className="text-2xl">Gestão de Categorias</CardTitle>
+          <CardTitle className="text-2xl">Gestao de Categorias</CardTitle>
           <CardDescription>
-            Crie, edite e organize as categorias que estruturam o catálogo.
+            Crie, edite e organize as categorias que estruturam o catalogo.
           </CardDescription>
         </div>
 
@@ -618,7 +421,7 @@ export function CategoryManagement({
           ) : (
             <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               <ShieldAlertIcon className="size-4" />
-              Exclusão restrita ao super admin.
+              Exclusao restrita ao super admin.
             </div>
           )}
           <CategoryEditorDialog mode="create" />
@@ -628,8 +431,8 @@ export function CategoryManagement({
       <CardContent>
         {categories.length === 0 ? (
           <div className="rounded-3xl border border-dashed px-6 py-12 text-center text-muted-foreground">
-            Nenhuma categoria cadastrada ainda. Crie a primeira para começar o
-            catálogo.
+            Nenhuma categoria cadastrada ainda. Crie a primeira para iniciar o
+            catalogo.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -661,7 +464,7 @@ export function CategoryManagement({
 
                 <div className="rounded-2xl border bg-background/70 px-4 py-3 text-sm text-muted-foreground">
                   {category.products.length > 0
-                    ? "Categoria ativa no catálogo e disponível para novos produtos."
+                    ? "Categoria ativa no catalogo e pronta para novos produtos."
                     : "Categoria criada e pronta para receber produtos."}
                 </div>
 
@@ -709,10 +512,10 @@ export function ProductManagement({
     <Card className="border-border/70 bg-background/95 rounded-3xl shadow-sm">
       <CardHeader className="gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-1">
-          <CardTitle className="text-2xl">Gestão de Produtos</CardTitle>
+          <CardTitle className="text-2xl">Gestao de Produtos</CardTitle>
           <CardDescription>
-            Organize o catálogo por categoria, adicione novidades e mantenha a
-            vitrine atualizada.
+            Organize o catalogo por categoria, mantenha a grade de tamanhos e
+            controle a variante base de cada produto.
           </CardDescription>
         </div>
 
@@ -722,7 +525,7 @@ export function ProductManagement({
           ) : (
             <div className="flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
               <ShieldAlertIcon className="size-4" />
-              Exclusão restrita ao super admin.
+              Exclusao restrita ao super admin.
             </div>
           )}
           {categories.length > 0 ? (
@@ -739,165 +542,182 @@ export function ProductManagement({
       <CardContent className="space-y-6">
         {categories.length === 0 ? (
           <div className="rounded-3xl border border-dashed px-6 py-12 text-center text-muted-foreground">
-            Crie uma categoria antes de cadastrar produtos no catÃ¡logo.
+            Crie uma categoria antes de cadastrar produtos no catalogo.
           </div>
         ) : (
-        <Tabs defaultValue={defaultTab} className="space-y-6">
-          <div className="snap-x snap-mandatory overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="inline-flex min-w-full items-center gap-2 rounded-full border border-[#eadfff] bg-[linear-gradient(90deg,_rgba(244,239,255,0.96),_rgba(255,255,255,0.96))] p-2 shadow-[0_14px_32px_rgba(123,97,196,0.10)]">
-              <div className="flex shrink-0 items-center gap-2 rounded-full bg-white/90 px-3 py-2 shadow-[0_8px_18px_rgba(123,97,196,0.10)]">
-                <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em]">
-                  Categorias
-                </span>
-                <Badge variant="outline" className="rounded-full px-2.5 py-0.5">
-                  {categories.length}
-                </Badge>
-                <Badge
-                  variant="secondary"
-                  className="rounded-full px-2.5 py-0.5"
-                >
-                  {totalProducts} produtos
-                </Badge>
-              </div>
-
-              <TabsList className="flex h-auto min-w-max flex-nowrap items-center gap-2 bg-transparent p-0 shadow-none">
-              {categories.map((category, index) => {
-                const accent = ribbonAccents[index % ribbonAccents.length];
-                const productLabel =
-                  category.products.length === 1 ? "produto" : "produtos";
-
-                return (
-                  <TabsTrigger
-                    key={category.id}
-                    value={category.slug}
-                    className={cn(
-                      "h-12 snap-start flex-none rounded-full border border-white/80 bg-white/78 px-3.5 py-2 text-left whitespace-nowrap shadow-[0_8px_18px_rgba(107,89,164,0.08)] transition-all duration-200 hover:-translate-y-0.5 data-[state=active]:border-primary/15 data-[state=active]:bg-white data-[state=active]:shadow-[0_14px_28px_rgba(111,76,196,0.16)]",
-                    )}
+          <Tabs defaultValue={defaultTab} className="space-y-6">
+            <div className="snap-x snap-mandatory overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <div className="inline-flex min-w-full items-center gap-2 rounded-full border border-[#eadfff] bg-[linear-gradient(90deg,_rgba(244,239,255,0.96),_rgba(255,255,255,0.96))] p-2 shadow-[0_14px_32px_rgba(123,97,196,0.10)]">
+                <div className="flex shrink-0 items-center gap-2 rounded-full bg-white/90 px-3 py-2 shadow-[0_8px_18px_rgba(123,97,196,0.10)]">
+                  <span className="text-muted-foreground text-[11px] font-semibold uppercase tracking-[0.2em]">
+                    Categorias
+                  </span>
+                  <Badge variant="outline" className="rounded-full px-2.5 py-0.5">
+                    {categories.length}
+                  </Badge>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full px-2.5 py-0.5"
                   >
-                    <div className="flex w-full items-center gap-2.5">
-                      <span
+                    {totalProducts} produtos
+                  </Badge>
+                </div>
+
+                <TabsList className="flex h-auto min-w-max flex-nowrap items-center gap-2 bg-transparent p-0 shadow-none">
+                  {categories.map((category, index) => {
+                    const accent = ribbonAccents[index % ribbonAccents.length];
+                    const productLabel =
+                      category.products.length === 1 ? "produto" : "produtos";
+
+                    return (
+                      <TabsTrigger
+                        key={category.id}
+                        value={category.slug}
                         className={cn(
-                          "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                          accent,
+                          "h-12 snap-start flex-none rounded-full border border-white/80 bg-white/78 px-3.5 py-2 text-left whitespace-nowrap shadow-[0_8px_18px_rgba(107,89,164,0.08)] transition-all duration-200 hover:-translate-y-0.5 data-[state=active]:border-primary/15 data-[state=active]:bg-white data-[state=active]:shadow-[0_14px_28px_rgba(111,76,196,0.16)]",
                         )}
                       >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
+                        <div className="flex w-full items-center gap-2.5">
+                          <span
+                            className={cn(
+                              "flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+                              accent,
+                            )}
+                          >
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
 
-                      <div className="flex items-center gap-2 whitespace-nowrap">
-                        <p className="text-foreground text-sm font-semibold">
-                          {category.name}
-                        </p>
-                        <span className="text-muted-foreground text-xs">
-                          {category.products.length} {productLabel}
-                        </span>
-                      </div>
-                    </div>
-                  </TabsTrigger>
-                );
-              })}
-              </TabsList>
+                          <div className="flex items-center gap-2 whitespace-nowrap">
+                            <p className="text-foreground text-sm font-semibold">
+                              {category.name}
+                            </p>
+                            <span className="text-muted-foreground text-xs">
+                              {category.products.length} {productLabel}
+                            </span>
+                          </div>
+                        </div>
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+              </div>
             </div>
-          </div>
 
-          {categories.map((category) => (
-            <TabsContent key={category.id} value={category.slug} className="mt-0">
-              {category.products.length === 0 ? (
-                <div className="rounded-3xl border border-dashed px-6 py-12 text-center text-muted-foreground">
-                  Nenhum produto cadastrado nessa categoria ainda.
-                </div>
-              ) : (
-                <div className="grid gap-4 xl:grid-cols-2">
-                  {category.products.map((product) => (
-                    <div
-                      key={product.id}
-                      className="border-border/70 bg-muted/20 grid gap-4 rounded-3xl border p-4 sm:grid-cols-[140px_1fr]"
-                    >
-                      <div className="overflow-hidden rounded-2xl bg-muted">
-                        {product.primaryVariant?.imageUrl ? (
-                          <img
-                            src={product.primaryVariant.imageUrl}
-                            alt={product.name}
-                            className="h-full min-h-36 w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex min-h-36 items-center justify-center">
-                            <ImageIcon className="text-muted-foreground size-6" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex min-w-0 flex-col justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-lg font-semibold">{product.name}</h3>
-                            <Badge variant="secondary">
-                              {product.variantsCount} variações
-                            </Badge>
-                          </div>
-                          <p className="text-muted-foreground line-clamp-3 text-sm">
-                            {product.description}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-end justify-between gap-3">
-                          <div>
-                            <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
-                              Variação de destaque
-                            </p>
-                            <p className="text-sm font-medium">
-                              {product.primaryVariant?.name ?? "Sem variação"}
-                              {product.primaryVariant?.color
-                                ? ` • ${product.primaryVariant.color}`
-                                : ""}
-                            </p>
-                            <p className="text-lg font-semibold">
-                              {product.primaryVariant
-                                ? formatBRL(product.primaryVariant.priceInCents)
-                                : "Preço não definido"}
-                            </p>
-                            <p className="text-muted-foreground text-sm">
-                              Frete:{" "}
-                              {product.shippingCostInCents > 0
-                                ? formatBRL(product.shippingCostInCents)
-                                : "Grátis"}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2">
-                            <Button asChild variant="outline" size="sm" className="rounded-xl">
-                              <Link href={`/admin/produtos/${product.id}/variantes`}>
-                                Variantes
-                              </Link>
-                            </Button>
-                            <ProductEditorDialog
-                              categories={categories}
-                              mode="edit"
-                              product={product}
-                              trigger={
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={cn("rounded-xl")}
-                                >
-                                  <PencilLineIcon />
-                                  Editar
-                                </Button>
-                              }
+            {categories.map((category) => (
+              <TabsContent key={category.id} value={category.slug} className="mt-0">
+                {category.products.length === 0 ? (
+                  <div className="rounded-3xl border border-dashed px-6 py-12 text-center text-muted-foreground">
+                    Nenhum produto cadastrado nessa categoria ainda.
+                  </div>
+                ) : (
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    {category.products.map((product) => (
+                      <div
+                        key={product.id}
+                        className="border-border/70 bg-muted/20 grid gap-4 rounded-3xl border p-4 sm:grid-cols-[140px_1fr]"
+                      >
+                        <div className="overflow-hidden rounded-2xl bg-muted">
+                          {product.primaryVariant?.imageUrl ? (
+                            <img
+                              src={product.primaryVariant.imageUrl}
+                              alt={product.name}
+                              className="h-full min-h-36 w-full object-cover"
                             />
-                            {role === "super_admin" ? (
-                              <DeleteProductDialog productId={product.id} />
-                            ) : null}
+                          ) : (
+                            <div className="flex min-h-36 items-center justify-center">
+                              <ImageIcon className="text-muted-foreground size-6" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex min-w-0 flex-col justify-between gap-4">
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-lg font-semibold">
+                                {product.name}
+                              </h3>
+                              <Badge variant="secondary">
+                                {product.variantsCount} variantes
+                              </Badge>
+                              <Badge variant="outline">
+                                {product.sizeType === "numeric"
+                                  ? "Numerico"
+                                  : "Alfabetico"}
+                              </Badge>
+                            </div>
+                            <p className="text-muted-foreground line-clamp-3 text-sm">
+                              {product.description}
+                            </p>
+                            <ProductSizeSummary
+                              sizeType={product.sizeType}
+                              productSizes={product.productSizes}
+                            />
+                          </div>
+
+                          <div className="flex flex-wrap items-end justify-between gap-3">
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
+                                Variante base
+                              </p>
+                              <p className="text-sm font-medium">
+                                {product.primaryVariant?.name ?? "Sem variante"}
+                                {product.primaryVariant?.color
+                                  ? ` - ${product.primaryVariant.color}`
+                                  : ""}
+                                {product.primaryVariant?.size
+                                  ? ` - ${product.primaryVariant.size}`
+                                  : ""}
+                              </p>
+                              <p className="text-lg font-semibold">
+                                {product.primaryVariant
+                                  ? formatBRL(product.primaryVariant.priceInCents)
+                                  : "Preco nao definido"}
+                              </p>
+                              <p className="text-muted-foreground text-sm">
+                                Estoque base: {product.primaryVariant?.stock ?? 0}
+                              </p>
+                              <p className="text-muted-foreground text-sm">
+                                Frete:{" "}
+                                {product.shippingCostInCents > 0
+                                  ? formatBRL(product.shippingCostInCents)
+                                  : "Gratis"}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <Button asChild variant="outline" size="sm" className="rounded-xl">
+                                <Link href={`/admin/produtos/${product.id}/variantes`}>
+                                  Variantes
+                                </Link>
+                              </Button>
+                              <ProductEditorDialog
+                                categories={categories}
+                                mode="edit"
+                                product={product}
+                                trigger={
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="rounded-xl"
+                                  >
+                                    <PencilLineIcon />
+                                    Editar
+                                  </Button>
+                                }
+                              />
+                              {role === "super_admin" ? (
+                                <DeleteProductDialog productId={product.id} />
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-          ))}
-        </Tabs>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
         )}
       </CardContent>
     </Card>

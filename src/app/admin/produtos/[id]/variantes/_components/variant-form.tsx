@@ -34,19 +34,41 @@ import {
 } from "@/lib/admin-variant-schema";
 import {
   PRODUCT_VARIANT_SIZE_VALUES,
+  type ProductSizeModel,
+  type ProductSizeType,
   type ProductVariantModel,
 } from "@/lib/product-variant-schema";
 
 type VariantFormProps = {
   mode: "create" | "edit";
   productId: string;
+  sizeType: ProductSizeType;
+  productSizes: ProductSizeModel[];
   trigger?: React.ReactNode;
   variant?: ProductVariantModel;
 };
 
+function getDefaultSize(params: {
+  sizeType: ProductSizeType;
+  productSizes: ProductSizeModel[];
+  variant?: ProductVariantModel;
+}) {
+  if (params.variant?.size) {
+    return params.variant.size;
+  }
+
+  if (params.sizeType === "numeric") {
+    return params.productSizes[0]?.sizeValue ?? "33";
+  }
+
+  return "M";
+}
+
 export function VariantForm({
   mode,
   productId,
+  sizeType,
+  productSizes,
   trigger,
   variant,
 }: VariantFormProps) {
@@ -54,15 +76,32 @@ export function VariantForm({
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
+  const sizeOptions = useMemo(() => {
+    const baseOptions =
+      sizeType === "numeric"
+        ? productSizes.map((size) => size.sizeValue)
+        : [...PRODUCT_VARIANT_SIZE_VALUES];
+
+    if (variant?.size && !baseOptions.includes(variant.size)) {
+      return [variant.size, ...baseOptions];
+    }
+
+    return baseOptions;
+  }, [productSizes, sizeType, variant?.size]);
+
   const defaultValues = useMemo<AdminVariantFormValues>(
     () => ({
       productId,
       color: variant?.color ?? "",
-      size: variant?.size ?? "M",
+      size: getDefaultSize({
+        sizeType,
+        productSizes,
+        variant,
+      }),
       imageUrl: variant?.imageUrl ?? "",
-      isAvailable: variant?.isAvailable ?? true,
+      stock: variant?.stock ?? 0,
     }),
-    [productId, variant],
+    [productId, productSizes, sizeType, variant],
   );
 
   const form = useForm<AdminVariantFormValues, unknown, AdminVariantInput>({
@@ -112,9 +151,8 @@ export function VariantForm({
             {mode === "create" ? "Criar variante" : "Editar variante"}
           </DialogTitle>
           <DialogDescription>
-            Defina cor, tamanho, imagem e disponibilidade. O preço da nova
-            variante herda o valor da variante base do produto para preservar a
-            compatibilidade com o catálogo atual.
+            Defina cor, tamanho, imagem e estoque. A disponibilidade e
+            sincronizada automaticamente a partir do estoque salvo.
           </DialogDescription>
         </DialogHeader>
 
@@ -144,15 +182,17 @@ export function VariantForm({
                 name="size"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tamanho</FormLabel>
+                    <FormLabel>
+                      Tamanho {sizeType === "numeric" ? "numerico" : ""}
+                    </FormLabel>
                     <FormControl>
                       <select
                         className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full rounded-xl border bg-transparent px-3 text-sm outline-none focus-visible:ring-[3px]"
                         {...field}
                       >
-                        {PRODUCT_VARIANT_SIZE_VALUES.map((size) => (
-                          <option key={size} value={size}>
-                            {size}
+                        {sizeOptions.map((sizeOption) => (
+                          <option key={sizeOption} value={sizeOption}>
+                            {sizeOption}
                           </option>
                         ))}
                       </select>
@@ -164,30 +204,30 @@ export function VariantForm({
 
               <FormField
                 control={form.control}
-                name="isAvailable"
+                name="stock"
                 render={({ field }) => (
-                  <FormItem className="rounded-2xl border px-4 py-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <FormLabel className="text-sm font-medium">
-                          Disponível
-                        </FormLabel>
-                        <p className="text-muted-foreground text-xs">
-                          Controla se a variante pode ser comprada na loja.
-                        </p>
-                      </div>
-
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          className="size-4 rounded border"
-                          checked={Boolean(field.value)}
-                          onChange={(event) =>
-                            field.onChange(event.target.checked)
-                          }
-                        />
-                      </FormControl>
-                    </div>
+                  <FormItem>
+                    <FormLabel>Estoque</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="rounded-xl"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        disabled={field.disabled}
+                        value={typeof field.value === "number" ? field.value : ""}
+                        onChange={(event) =>
+                          field.onChange(
+                            event.target.value === ""
+                              ? 0
+                              : Number(event.target.value),
+                          )
+                        }
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -222,7 +262,7 @@ export function VariantForm({
                 Cancelar
               </Button>
               <Button type="submit" className="rounded-xl" disabled={isPending}>
-                {mode === "create" ? "Salvar variante" : "Salvar alterações"}
+                {mode === "create" ? "Salvar variante" : "Salvar alteracoes"}
               </Button>
             </DialogFooter>
           </form>

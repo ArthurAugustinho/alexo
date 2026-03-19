@@ -1,4 +1,4 @@
-import { desc } from "drizzle-orm";
+import { asc, desc } from "drizzle-orm";
 
 import { AdminDashboardGrid } from "@/components/admin/admin-dashboard-grid";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -8,9 +8,11 @@ import {
   ProductManagement,
 } from "@/components/admin/product-management";
 import { db } from "@/db";
-import { categoryTable, productTable } from "@/db/schema";
+import { categoryTable, productSizeTable, productTable, productVariantTable } from "@/db/schema";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { getAdminDashboardData } from "@/lib/admin-dashboard";
+
+export const dynamic = "force-dynamic";
 
 async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
   const categories = await db.query.categoryTable.findMany({
@@ -19,7 +21,12 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
       products: {
         orderBy: [desc(productTable.createdAt)],
         with: {
-          variants: true,
+          productSizes: {
+            orderBy: [asc(productSizeTable.position)],
+          },
+          variants: {
+            orderBy: [asc(productVariantTable.createdAt)],
+          },
         },
       },
     },
@@ -35,13 +42,24 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
       description: product.description,
       categoryId: category.id,
       slug: product.slug,
+      sizeType: product.sizeType,
+      productSizes: product.productSizes,
       shippingCostInCents: product.shippingCostInCents,
       variantsCount: product.variants.length,
+      variants: product.variants.map((variant) => ({
+        id: variant.id,
+        color: variant.color,
+        size: variant.size,
+        stock: variant.stock,
+        imageUrl: variant.imageUrl,
+      })),
       primaryVariant: product.variants[0]
         ? {
             id: product.variants[0].id,
             name: product.variants[0].name,
             color: product.variants[0].color,
+            size: product.variants[0].size,
+            stock: product.variants[0].stock,
             priceInCents: product.variants[0].priceInCents,
             imageUrl: product.variants[0].imageUrl,
           }
