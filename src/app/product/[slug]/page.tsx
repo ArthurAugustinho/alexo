@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import Footer from "@/components/common/footer";
@@ -8,7 +9,9 @@ import ProductList from "@/components/common/product-list";
 import ProductDetailsClient from "@/components/product/product-details-client";
 import { db } from "@/db";
 import { productTable } from "@/db/schema";
+import { auth } from "@/lib/auth";
 import { getProductBySlug } from "@/lib/queries/products";
+import { isProductInWishlist } from "@/lib/queries/wishlist";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -69,7 +72,12 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     searchParams,
   ]);
 
-  const product = await getProductBySlug(slug);
+  const [product, session] = await Promise.all([
+    getProductBySlug(slug),
+    auth.api.getSession({
+      headers: await headers(),
+    }),
+  ]);
 
   if (!product || product.variants.length === 0) {
     return notFound();
@@ -88,6 +96,9 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
       variants: true,
     },
   });
+  const isWishlisted = session?.user.id
+    ? await isProductInWishlist(session.user.id, product.id)
+    : false;
 
   return (
     <>
@@ -95,6 +106,8 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
       <div className="flex flex-col space-y-6">
         <ProductDetailsClient
           initialVariantSlug={variantSlug}
+          initialIsWishlisted={isWishlisted}
+          productId={product.id}
           productDescription={product.description}
           productName={product.name}
           sizeType={product.sizeType}

@@ -14,9 +14,12 @@ import {
 import ProductActions from "./product-actions";
 import ProductImage from "./product-image";
 import VariantSelector from "./variant-selector";
+import { WishlistButton } from "./wishlist-button";
 
 type ProductDetailsClientProps = {
   initialVariantSlug?: string;
+  initialIsWishlisted: boolean;
+  productId: string;
   productDescription: string;
   productName: string;
   sizeType: ProductSizeType;
@@ -26,6 +29,8 @@ type ProductDetailsClientProps = {
 
 const ProductDetailsClient = ({
   initialVariantSlug,
+  initialIsWishlisted,
+  productId,
   productDescription,
   productName,
   sizeType,
@@ -73,16 +78,23 @@ const ProductDetailsClient = ({
         onSizeSelect={selectSize}
       />
 
-      <div className="space-y-2 px-5">
-        <h2 className="text-lg font-semibold">{productName}</h2>
-        <h3 className="text-muted-foreground text-sm">
-          {selectedColor && selectedSize
-            ? `${selectedColor} - ${selectedSize}`
-            : "Selecione cor e tamanho"}
-        </h3>
-        <h3 className="text-lg font-semibold">
-          {formatCentsToBRL(displayedPriceInCents)}
-        </h3>
+      <div className="flex items-start justify-between gap-4 px-5">
+        <div className="space-y-2">
+          <h2 className="text-lg font-semibold">{productName}</h2>
+          <h3 className="text-muted-foreground text-sm">
+            {selectedColor && selectedSize
+              ? `${selectedColor} - ${selectedSize}`
+              : "Selecione cor e tamanho"}
+          </h3>
+          <h3 className="text-lg font-semibold">
+            {formatCentsToBRL(displayedPriceInCents)}
+          </h3>
+        </div>
+
+        <WishlistButton
+          productId={productId}
+          initialIsWishlisted={initialIsWishlisted}
+        />
       </div>
 
       <ProductActions

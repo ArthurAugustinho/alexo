@@ -2,11 +2,13 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -55,6 +57,7 @@ export const userRelations = relations(userTable, ({ many, one }) => ({
     references: [cartTable.userId],
   }),
   orders: many(orderTable),
+  wishlistItems: many(wishlistItemTable),
 }));
 
 export const sessionTable = pgTable("session", {
@@ -146,6 +149,7 @@ export const productRelations = relations(productTable, ({ one, many }) => ({
   featuredEntries: many(featuredProductTable),
   productSizes: many(productSizeTable),
   variants: many(productVariantTable),
+  wishlistItems: many(wishlistItemTable),
 }));
 
 export const productSizeTable = pgTable("product_size", {
@@ -201,6 +205,38 @@ export const productVariantRelations = relations(
     orderItems: many(orderItemTable),
   }),
 );
+
+export const wishlistItemTable = pgTable(
+  "wishlist_items",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => productTable.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("wishlist_items_user_product_unique").on(
+      table.userId,
+      table.productId,
+    ),
+    index("wishlist_items_user_id_idx").on(table.userId),
+  ],
+);
+
+export const wishlistItemRelations = relations(wishlistItemTable, ({ one }) => ({
+  user: one(userTable, {
+    fields: [wishlistItemTable.userId],
+    references: [userTable.id],
+  }),
+  product: one(productTable, {
+    fields: [wishlistItemTable.productId],
+    references: [productTable.id],
+  }),
+}));
 
 export const featuredProductTable = pgTable("featured_products", {
   id: uuid().primaryKey().defaultRandom(),
