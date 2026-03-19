@@ -52,6 +52,7 @@ type ProductFormVariant = {
 type ProductFormProduct = {
   id: string;
   name: string;
+  brand: string | null;
   description: string;
   categoryId: string;
   shippingCostInCents: number;
@@ -184,6 +185,7 @@ export function ProductForm({
       productId: product?.id,
       primaryVariantId: product?.primaryVariant?.id,
       name: product?.name ?? "",
+      brand: product?.brand ?? "",
       description: product?.description ?? "",
       categoryId: product?.categoryId ?? categories[0]?.id ?? "",
       variantName: product?.primaryVariant?.name ?? "",
@@ -374,6 +376,24 @@ export function ProductForm({
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="brand"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Marca</FormLabel>
+              <FormControl>
+                <Input
+                  className="rounded-xl"
+                  placeholder="Ex: Nike"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}

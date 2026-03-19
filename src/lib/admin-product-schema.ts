@@ -27,6 +27,11 @@ export const adminProductSchema = z
       .string("Nome invalido.")
       .trim()
       .min(2, "Informe o nome do produto."),
+    brand: z
+      .string("Marca invalida.")
+      .trim()
+      .max(100, "A marca pode ter no maximo 100 caracteres.")
+      .default(""),
     description: z
       .string("Descricao invalida.")
       .trim()

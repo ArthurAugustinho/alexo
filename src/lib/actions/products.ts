@@ -183,6 +183,7 @@ export async function createAdminProduct(
       .values({
         categoryId: payload.data.categoryId,
         name: payload.data.name,
+        brand: payload.data.brand || null,
         description: payload.data.description,
         slug: productSlug,
         sizeType: payload.data.sizeType,
@@ -306,6 +307,7 @@ export async function updateAdminProduct(
       .set({
         categoryId: payload.data.categoryId,
         name: payload.data.name,
+        brand: payload.data.brand || null,
         description: payload.data.description,
         slug: productSlug,
         sizeType: payload.data.sizeType,

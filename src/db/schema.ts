@@ -132,6 +132,7 @@ export const productTable = pgTable("product", {
   name: text().notNull(),
   slug: text().notNull().unique(),
   description: text().notNull(),
+  brand: varchar("brand", { length: 100 }),
   sizeType: sizeTypeEnum("size_type").notNull().default("alphabetic"),
   shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),

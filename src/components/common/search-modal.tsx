@@ -5,7 +5,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { buildSearchUrl } from "@/helpers/build-search-url";
 import { highlightMatch } from "@/helpers/highlight-match";
+import { normalizeSearch } from "@/helpers/normalize-search";
 import {
   type ProductSearchResult,
   useProductSearch,
@@ -45,6 +47,7 @@ export function SearchModal() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const { results, isLoading, isEmpty } = useProductSearch(query);
   const trimmedQuery = query.trim();
+  const normalizedQuery = normalizeSearch(query);
 
   useEffect(() => {
     if (!isOpen) {
@@ -58,7 +61,7 @@ export function SearchModal() {
 
   useEffect(() => {
     setHighlightedIndex((currentIndex) => {
-      if (!isOpen || results.length === 0 || trimmedQuery.length < 2) {
+      if (!isOpen || results.length === 0 || normalizedQuery.length < 2) {
         return -1;
       }
 
@@ -68,7 +71,7 @@ export function SearchModal() {
 
       return currentIndex;
     });
-  }, [isOpen, results.length, trimmedQuery.length]);
+  }, [isOpen, normalizedQuery.length, results.length]);
 
   function closeModal() {
     setIsOpen(false);
@@ -79,15 +82,20 @@ export function SearchModal() {
     router.push(`/product/${result.slug}`);
   }
 
-  function selectHighlightedOrFirstResult() {
-    const selectedResult =
-      highlightedIndex >= 0 ? results[highlightedIndex] : results[0];
-
-    if (!selectedResult) {
+  function navigateToSearchResults() {
+    if (!normalizedQuery) {
       return;
     }
 
-    navigateToResult(selectedResult);
+    closeModal();
+    router.push(
+      buildSearchUrl(
+        {},
+        {
+          q: normalizedQuery,
+        },
+      ),
+    );
   }
 
   function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -123,7 +131,16 @@ export function SearchModal() {
 
     if (event.key === "Enter") {
       event.preventDefault();
-      selectHighlightedOrFirstResult();
+
+      const selectedResult =
+        highlightedIndex >= 0 ? results[highlightedIndex] : null;
+
+      if (selectedResult) {
+        navigateToResult(selectedResult);
+        return;
+      }
+
+      navigateToSearchResults();
     }
   }
 
@@ -178,7 +195,7 @@ export function SearchModal() {
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-4">
-            {trimmedQuery.length < 2 ? (
+            {normalizedQuery.length < 2 ? (
               <p className="text-muted-foreground text-sm">
                 Digite pelo menos 2 caracteres para buscar produtos.
               </p>
@@ -189,49 +206,59 @@ export function SearchModal() {
                 Nenhum produto encontrado para &quot;{trimmedQuery}&quot;
               </p>
             ) : (
-              <ul
-                id="mobile-search-results"
-                role="listbox"
-                className="space-y-1"
-              >
-                {results.map((result, index) => {
-                  const isSelected = highlightedIndex === index;
+              <div className="space-y-3">
+                <ul
+                  id="mobile-search-results"
+                  role="listbox"
+                  className="space-y-1"
+                >
+                  {results.map((result, index) => {
+                    const isSelected = highlightedIndex === index;
 
-                  return (
-                    <li key={result.id}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors",
-                          isSelected ? "bg-muted" : "hover:bg-muted/70",
-                        )}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        onClick={() => navigateToResult(result)}
-                      >
-                        {result.imageUrl ? (
-                          <Image
-                            src={result.imageUrl}
-                            alt={result.name}
-                            width={32}
-                            height={32}
-                            className="h-8 w-8 rounded-xl object-cover"
-                          />
-                        ) : (
-                          <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-xl">
-                            <SearchIcon className="text-muted-foreground size-4" />
-                          </div>
-                        )}
+                    return (
+                      <li key={result.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors",
+                            isSelected ? "bg-muted" : "hover:bg-muted/70",
+                          )}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                          onClick={() => navigateToResult(result)}
+                        >
+                          {result.imageUrl ? (
+                            <Image
+                              src={result.imageUrl}
+                              alt={result.name}
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 rounded-xl object-cover"
+                            />
+                          ) : (
+                            <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-xl">
+                              <SearchIcon className="text-muted-foreground size-4" />
+                            </div>
+                          )}
 
-                        <span className="line-clamp-1 text-sm">
-                          {highlightMatch(result.name, trimmedQuery)}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          <span className="line-clamp-1 text-sm">
+                            {highlightMatch(result.name, trimmedQuery)}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <button
+                  type="button"
+                  className="text-primary text-sm font-medium"
+                  onClick={navigateToSearchResults}
+                >
+                  Ver todos os resultados para &quot;{trimmedQuery}&quot;
+                </button>
+              </div>
             )}
           </div>
         </DialogContent>

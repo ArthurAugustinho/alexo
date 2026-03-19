@@ -39,6 +39,7 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
     products: category.products.map((product) => ({
       id: product.id,
       name: product.name,
+      brand: product.brand,
       description: product.description,
       categoryId: category.id,
       slug: product.slug,

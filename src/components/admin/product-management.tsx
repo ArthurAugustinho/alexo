@@ -66,6 +66,7 @@ type DashboardRole = "admin" | "super_admin";
 export type AdminCatalogProduct = {
   id: string;
   name: string;
+  brand: string | null;
   description: string;
   categoryId: string;
   slug: string;

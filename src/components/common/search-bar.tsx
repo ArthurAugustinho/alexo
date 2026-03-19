@@ -5,7 +5,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { buildSearchUrl } from "@/helpers/build-search-url";
 import { highlightMatch } from "@/helpers/highlight-match";
+import { normalizeSearch } from "@/helpers/normalize-search";
 import {
   type ProductSearchResult,
   useProductSearch,
@@ -39,9 +41,10 @@ export function SearchBar() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const { results, isLoading, isEmpty } = useProductSearch(query);
   const trimmedQuery = query.trim();
+  const normalizedQuery = normalizeSearch(query);
   const shouldShowDropdown =
     isOpen &&
-    trimmedQuery.length >= 2 &&
+    normalizedQuery.length >= 2 &&
     (isLoading || isEmpty || results.length > 0);
 
   useEffect(() => {
@@ -75,7 +78,7 @@ export function SearchBar() {
 
   useEffect(() => {
     setHighlightedIndex((currentIndex) => {
-      if (results.length === 0 || trimmedQuery.length < 2) {
+      if (results.length === 0 || normalizedQuery.length < 2) {
         return -1;
       }
 
@@ -85,7 +88,7 @@ export function SearchBar() {
 
       return currentIndex;
     });
-  }, [results.length, trimmedQuery.length]);
+  }, [normalizedQuery.length, results.length]);
 
   function closeSearch() {
     setIsOpen(false);
@@ -102,15 +105,20 @@ export function SearchBar() {
     router.push(`/product/${result.slug}`);
   }
 
-  function selectHighlightedOrFirstResult() {
-    const selectedResult =
-      highlightedIndex >= 0 ? results[highlightedIndex] : results[0];
-
-    if (!selectedResult) {
+  function navigateToSearchResults() {
+    if (!normalizedQuery) {
       return;
     }
 
-    navigateToResult(selectedResult);
+    closeSearch();
+    router.push(
+      buildSearchUrl(
+        {},
+        {
+          q: normalizedQuery,
+        },
+      ),
+    );
   }
 
   function handleInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -146,7 +154,16 @@ export function SearchBar() {
 
     if (event.key === "Enter") {
       event.preventDefault();
-      selectHighlightedOrFirstResult();
+
+      const selectedResult =
+        highlightedIndex >= 0 ? results[highlightedIndex] : null;
+
+      if (selectedResult) {
+        navigateToResult(selectedResult);
+        return;
+      }
+
+      navigateToSearchResults();
     }
   }
 
@@ -212,50 +229,62 @@ export function SearchBar() {
                 Nenhum produto encontrado para &quot;{trimmedQuery}&quot;
               </p>
             ) : (
-              <ul
-                id="desktop-search-results"
-                role="listbox"
-                className="max-h-80 overflow-y-auto py-2"
-              >
-                {results.map((result, index) => {
-                  const isSelected = highlightedIndex === index;
+              <>
+                <ul
+                  id="desktop-search-results"
+                  role="listbox"
+                  className="max-h-80 overflow-y-auto py-2"
+                >
+                  {results.map((result, index) => {
+                    const isSelected = highlightedIndex === index;
 
-                  return (
-                    <li key={result.id}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        className={cn(
-                          "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
-                          isSelected ? "bg-muted" : "hover:bg-muted/70",
-                        )}
-                        onMouseEnter={() => setHighlightedIndex(index)}
-                        onMouseDown={(event) => event.preventDefault()}
-                        onClick={() => navigateToResult(result)}
-                      >
-                        {result.imageUrl ? (
-                          <Image
-                            src={result.imageUrl}
-                            alt={result.name}
-                            width={32}
-                            height={32}
-                            className="h-8 w-8 rounded-xl object-cover"
-                          />
-                        ) : (
-                          <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-xl">
-                            <SearchIcon className="text-muted-foreground size-4" />
-                          </div>
-                        )}
+                    return (
+                      <li key={result.id}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          className={cn(
+                            "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
+                            isSelected ? "bg-muted" : "hover:bg-muted/70",
+                          )}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => navigateToResult(result)}
+                        >
+                          {result.imageUrl ? (
+                            <Image
+                              src={result.imageUrl}
+                              alt={result.name}
+                              width={32}
+                              height={32}
+                              className="h-8 w-8 rounded-xl object-cover"
+                            />
+                          ) : (
+                            <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-xl">
+                              <SearchIcon className="text-muted-foreground size-4" />
+                            </div>
+                          )}
 
-                        <span className="line-clamp-1 text-sm">
-                          {highlightMatch(result.name, trimmedQuery)}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          <span className="line-clamp-1 text-sm">
+                            {highlightMatch(result.name, trimmedQuery)}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className="border-t px-3 py-3">
+                  <button
+                    type="button"
+                    className="text-primary text-sm font-medium"
+                    onClick={navigateToSearchResults}
+                  >
+                    Ver todos os resultados para &quot;{trimmedQuery}&quot;
+                  </button>
+                </div>
+              </>
             )}
           </div>
         ) : null}
