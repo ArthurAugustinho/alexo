@@ -1,19 +1,74 @@
 import { eq } from "drizzle-orm";
-import Image from "next/image";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import ProductActions from "@/app/product-variant/[slug]/components/product-actions";
-import VariantSelector from "@/app/product-variant/[slug]/components/variant-selector";
 import Footer from "@/components/common/footer";
 import { Header } from "@/components/common/header";
 import ProductList from "@/components/common/product-list";
+import ProductDetailsClient from "@/components/product/product-details-client";
 import { db } from "@/db";
 import { productTable } from "@/db/schema";
-import { formatCentsToBRL } from "@/helpers/money";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ variant?: string }>;
+}
+
+async function getProductBySlug(slug: string) {
+  return db.query.productTable.findFirst({
+    where: eq(productTable.slug, slug),
+    with: {
+      variants: true,
+    },
+  });
+}
+
+function truncateDescription(description: string, maxLength = 160) {
+  const normalizedDescription = description.trim();
+
+  if (normalizedDescription.length <= maxLength) {
+    return normalizedDescription;
+  }
+
+  return `${normalizedDescription.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
+export async function generateMetadata({
+  params,
+}: Pick<ProductPageProps, "params">): Promise<Metadata> {
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
+
+  if (!product) {
+    return {};
+  }
+
+  const preferredVariant =
+    product.variants.find((variant) => variant.isAvailable) ?? null;
+  const baseAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  const canonicalUrl = baseAppUrl
+    ? `${baseAppUrl}/product/${product.slug}`
+    : `/product/${product.slug}`;
+
+  return {
+    title: product.name,
+    description: truncateDescription(product.description),
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: preferredVariant
+      ? {
+          title: product.name,
+          description: truncateDescription(product.description),
+          images: [
+            {
+              url: preferredVariant.imageUrl,
+              alt: product.name,
+            },
+          ],
+        }
+      : undefined,
+  };
 }
 
 const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
@@ -22,22 +77,16 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     searchParams,
   ]);
 
-  const product = await db.query.productTable.findFirst({
-    where: eq(productTable.slug, slug),
-    with: {
-      variants: true,
-    },
-  });
+  const product = await getProductBySlug(slug);
 
   if (!product || product.variants.length === 0) {
     return notFound();
   }
 
-  const selectedVariant = variantSlug
-    ? product.variants.find((variant) => variant.slug === variantSlug)
-    : product.variants[0];
-
-  if (!selectedVariant) {
+  if (
+    variantSlug &&
+    !product.variants.some((variant) => variant.slug === variantSlug)
+  ) {
     return notFound();
   }
 
@@ -52,40 +101,14 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     <>
       <Header />
       <div className="flex flex-col space-y-6">
-        <Image
-          src={selectedVariant.imageUrl}
-          alt={selectedVariant.name}
-          sizes="100vw"
-          height={0}
-          width={0}
-          className="h-auto w-full object-cover"
+        <ProductDetailsClient
+          initialVariantSlug={variantSlug}
+          productDescription={product.description}
+          productName={product.name}
+          variants={product.variants}
         />
 
-        <div className="px-5">
-          <VariantSelector
-            productSlug={product.slug}
-            selectedVariantSlug={selectedVariant.slug}
-            variants={product.variants}
-          />
-        </div>
-
-        <div className="px-5">
-          <h2 className="text-lg font-semibold">{product.name}</h2>
-          <h3 className="text-muted-foreground text-sm">
-            {selectedVariant.name}
-          </h3>
-          <h3 className="text-lg font-semibold">
-            {formatCentsToBRL(selectedVariant.priceInCents)}
-          </h3>
-        </div>
-
-        <ProductActions productVariantId={selectedVariant.id} />
-
-        <div className="px-5">
-          <p className="text-shadow-amber-600">{product.description}</p>
-        </div>
-
-        <ProductList title="Talvez você goste" products={likelyProducts} />
+        <ProductList title="Talvez voce goste" products={likelyProducts} />
 
         <Footer />
       </div>

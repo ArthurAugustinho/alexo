@@ -9,6 +9,7 @@ import {
   TagIcon,
   Trash2Icon,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
@@ -864,6 +865,11 @@ export function ProductManagement({
                           </div>
 
                           <div className="flex flex-wrap gap-2">
+                            <Button asChild variant="outline" size="sm" className="rounded-xl">
+                              <Link href={`/admin/produtos/${product.id}/variantes`}>
+                                Variantes
+                              </Link>
+                            </Button>
                             <ProductEditorDialog
                               categories={categories}
                               mode="edit"

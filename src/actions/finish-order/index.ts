@@ -1,7 +1,6 @@
 "use server";
 
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 
 import { db } from "@/db";
@@ -37,6 +36,9 @@ export const finishOrder = async () => {
   }
   if (!cart.shippingAddress) {
     throw new Error("Shipping address not found");
+  }
+  if (cart.items.some((item) => !item.productVariant.isAvailable)) {
+    throw new Error("Uma ou mais variantes do carrinho estão indisponíveis.");
   }
   const totalPriceInCents = cart.items.reduce(
     (acc, item) => acc + item.productVariant.priceInCents * item.quantity,

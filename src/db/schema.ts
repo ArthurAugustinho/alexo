@@ -15,6 +15,15 @@ export const userRoleEnum = pgEnum("user_role", [
   "super_admin",
 ]);
 
+export const productVariantSizeEnum = pgEnum("product_variant_size", [
+  "PP",
+  "P",
+  "M",
+  "G",
+  "GG",
+  "GGG",
+]);
+
 export const userTable = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -136,9 +145,11 @@ export const productVariantTable = pgTable("product_variant", {
     .references(() => productTable.id, { onDelete: "cascade" }),
   name: text().notNull(),
   slug: text().notNull().unique(),
+  size: productVariantSizeEnum("size").notNull().default("M"),
   color: text().notNull(),
   priceInCents: integer("price_in_cents").notNull(),
   imageUrl: text("image_url").notNull(),
+  isAvailable: boolean("is_available").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

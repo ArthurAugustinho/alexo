@@ -8,6 +8,7 @@ import {
   seasonalBannerTable,
 } from "@/db/schema";
 
+import { getPreferredVariant } from "./product-variant-schema";
 import {
   type SeasonalBanner,
   seasonalBannerListSchema,
@@ -23,7 +24,7 @@ function normalizeProductsForShowcase(
   products: ProductWithVariants[],
 ): StorefrontProduct[] {
   const normalizedProducts = products.flatMap((product) => {
-    const firstVariant = product.variants[0];
+    const firstVariant = getPreferredVariant(product.variants);
 
     if (!firstVariant) {
       return [];

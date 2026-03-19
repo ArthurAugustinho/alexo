@@ -15,6 +15,7 @@ import {
   productVariantTable,
   seasonalBannerTable,
 } from "@/db/schema";
+import { getPreferredVariant } from "@/lib/product-variant-schema";
 
 type ProductWithVariants = typeof productTable.$inferSelect & {
   variants: (typeof productVariantTable.$inferSelect)[];
@@ -39,7 +40,7 @@ function normalizeProducts(
   products: ProductWithVariants[],
 ): FeaturedProductSearchItem[] {
   return products.flatMap((product) => {
-    const firstVariant = product.variants[0];
+    const firstVariant = getPreferredVariant(product.variants);
 
     if (!firstVariant) {
       return [];
@@ -82,7 +83,7 @@ export async function getAdminFeaturedProducts(): Promise<
   });
 
   const normalizedItems = featuredItems.flatMap((item) => {
-    const firstVariant = item.product.variants[0];
+    const firstVariant = getPreferredVariant(item.product.variants);
 
     if (!firstVariant) {
       return [];

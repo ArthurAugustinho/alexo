@@ -24,6 +24,9 @@ export const addProductToCart = async (data: AddProductToCartSchema) => {
   if (!productVariant) {
     throw new Error("Product variant not found");
   }
+  if (!productVariant.isAvailable) {
+    throw new Error("Esta variante está indisponível no momento.");
+  }
   const cart = await db.query.cartTable.findFirst({
     where: (cart, { eq }) => eq(cart.userId, session.user.id),
   });

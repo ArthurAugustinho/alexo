@@ -13,7 +13,7 @@ type ProductCardProps = {
 export function ProductCard({ badgeLabel, product }: ProductCardProps) {
   return (
     <Link
-      href={`/product-variant/${product.variantSlug}`}
+      href={`/product/${product.slug}?variant=${product.variantSlug}`}
       aria-label={`Abrir produto ${product.name}`}
       className="group snap-start"
     >

@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { productTable, productVariantTable } from "@/db/schema";
 import { formatCentsToBRL } from "@/helpers/money";
+import { getPreferredVariant } from "@/lib/product-variant-schema";
 import { cn } from "@/lib/utils";
 
 interface ProductItemProps {
@@ -13,10 +14,15 @@ interface ProductItemProps {
 }
 
 const ProductItem = ({ product, textContainerClassName }: ProductItemProps) => {
-  const firstVariant = product.variants[0];
+  const firstVariant = getPreferredVariant(product.variants);
+
+  if (!firstVariant) {
+    return null;
+  }
+
   return (
     <Link
-      href={`/product-variant/${firstVariant.slug}`}
+      href={`/product/${product.slug}?variant=${firstVariant.slug}`}
       className="flex flex-col gap-4"
     >
       <Image
