@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { permanentRedirect } from "next/navigation";
 
 export const metadata: Metadata = {
   robots: {
@@ -12,8 +11,10 @@ export const metadata: Metadata = {
   },
 };
 
-const LegacyCheckoutSucessPage = () => {
-  permanentRedirect("/checkout/success");
-};
+type CartLayoutProps = Readonly<{
+  children: React.ReactNode;
+}>;
 
-export default LegacyCheckoutSucessPage;
+export default function CartLayout({ children }: CartLayoutProps) {
+  return children;
+}

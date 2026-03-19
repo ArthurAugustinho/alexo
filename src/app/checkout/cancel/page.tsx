@@ -1,4 +1,5 @@
-﻿import Image from "next/image";
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Header } from "@/components/common/header";
@@ -10,6 +11,17 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
+};
 
 type CheckoutCancelPageProps = {
   searchParams: Promise<{

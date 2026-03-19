@@ -14,6 +14,18 @@ interface ProductPageProps {
   searchParams: Promise<{ variant?: string }>;
 }
 
+function getAppUrl() {
+  const currentAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!currentAppUrl) {
+    throw new Error("NEXT_PUBLIC_APP_URL is not set");
+  }
+
+  return currentAppUrl;
+}
+
+const appUrl = getAppUrl();
+
 async function getProductBySlug(slug: string) {
   return db.query.productTable.findFirst({
     where: eq(productTable.slug, slug),
@@ -43,29 +55,36 @@ export async function generateMetadata({
     return {};
   }
 
-  const preferredVariant =
-    product.variants.find((variant) => variant.isAvailable) ?? null;
-  const baseAppUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  const canonicalUrl = baseAppUrl
-    ? `${baseAppUrl}/product/${product.slug}`
-    : `/product/${product.slug}`;
+  const description = truncateDescription(product.description);
+  const primaryVariant = product.variants[0] ?? null;
+  const canonicalUrl = `${appUrl.replace(/\/$/, "")}/product/${product.slug}`;
 
   return {
     title: product.name,
-    description: truncateDescription(product.description),
+    description,
     alternates: {
       canonical: canonicalUrl,
     },
-    openGraph: preferredVariant
+    openGraph: primaryVariant
       ? {
+          type: "website",
           title: product.name,
-          description: truncateDescription(product.description),
+          description,
+          url: canonicalUrl,
           images: [
             {
-              url: preferredVariant.imageUrl,
+              url: primaryVariant.imageUrl,
               alt: product.name,
             },
           ],
+        }
+      : undefined,
+    twitter: primaryVariant
+      ? {
+          card: "summary_large_image",
+          title: product.name,
+          description,
+          images: [primaryVariant.imageUrl],
         }
       : undefined,
   };
