@@ -42,11 +42,12 @@ export const createCheckoutSession = async (
     },
   });
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   const checkoutSession = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "payment",
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?orderId=${orderId}`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/cancel?orderId=${orderId}`,
+    success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${appUrl}/checkout/cancel?orderId=${orderId}`,
     metadata: {
       orderId,
     },
