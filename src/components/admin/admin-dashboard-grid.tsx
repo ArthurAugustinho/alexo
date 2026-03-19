@@ -1,6 +1,6 @@
 import { TrendingUpIcon } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { MetricCard, MetricSourceBadge } from "@/components/admin/metric-card";
 import {
   Card,
   CardContent,
@@ -14,11 +14,26 @@ import type {
   DashboardChart,
 } from "@/lib/admin-dashboard";
 
-type SummaryCardProps = {
-  label: string;
-  value: string;
-  description: string;
-};
+const DASHBOARD_ESTIMATED_REASONS = {
+  revenueTrend:
+    "Sem pedidos pagos suficientes, o gráfico usa uma curva de fallback para preservar a leitura de sazonalidade.",
+  topProducts:
+    "Sem pedidos pagos suficientes, o ranking é preenchido com fallback do catálogo atual.",
+  conversionFunnel:
+    "Visitas, carrinhos e checkout são inferidos a partir de carrinhos e pedidos porque o schema atual não registra eventos de navegação.",
+  paymentMethods:
+    "A divisão entre cartão, Pix e boleto é estimada porque o método de pagamento não é persistido no pedido.",
+  averageTicketScatter:
+    "Sem pedidos pagos suficientes, o gráfico usa pontos sintéticos para manter a leitura comparativa.",
+  geoHeatmap:
+    "Sem volume real suficiente, o mapa usa uma distribuição simulada por estado e mês.",
+  orderStatusBoard:
+    "Sem volume real suficiente, a fila operacional é preenchida com valores de fallback por semana.",
+  returnRateByCategory:
+    "A taxa é um proxy baseado na relação entre itens vendidos e cancelados; não há eventos próprios de devolução.",
+  logisticsFunnel:
+    "O funil usa a idade do pedido pago como proxy de avanço logístico porque o schema atual não persiste eventos de last mile.",
+} as const;
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("pt-BR").format(value);
@@ -32,41 +47,17 @@ function formatCurrencyFromUnits(value: number) {
   }).format(value);
 }
 
-function SourceBadge({
-  source,
-}: {
-  source: DashboardChart<unknown>["source"];
-}) {
-  return (
-    <Badge variant={source === "real" ? "secondary" : "outline"}>
-      {source === "real" ? "Dados reais" : "Estimado"}
-    </Badge>
-  );
-}
-
-function SummaryCard({ label, value, description }: SummaryCardProps) {
-  return (
-    <Card className="border-border/70 bg-background/90 rounded-3xl">
-      <CardContent className="space-y-2 p-6">
-        <p className="text-muted-foreground text-xs uppercase tracking-[0.2em]">
-          {label}
-        </p>
-        <p className="text-3xl font-semibold">{value}</p>
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
 function ChartCard({
   title,
   description,
   source,
+  estimatedReason,
   children,
 }: {
   title: string;
   description: string;
   source: DashboardChart<unknown>["source"];
+  estimatedReason?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -76,7 +67,10 @@ function ChartCard({
           <CardTitle className="text-lg">{title}</CardTitle>
           <CardDescription className="max-w-lg">{description}</CardDescription>
         </div>
-        <SourceBadge source={source} />
+        <MetricSourceBadge
+          source={source}
+          estimatedReason={estimatedReason}
+        />
       </CardHeader>
       <CardContent className="min-w-0">{children}</CardContent>
     </Card>
@@ -112,6 +106,7 @@ function RevenueChart({
       title={chart.title}
       description={chart.description}
       source={chart.source}
+      estimatedReason={DASHBOARD_ESTIMATED_REASONS.revenueTrend}
     >
       <div className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-[1.2fr_0.8fr] sm:items-end">
@@ -190,12 +185,14 @@ function RevenueChart({
 
 function VerticalBarChart({
   chart,
+  estimatedReason,
   formatter = formatNumber,
   suffix,
 }: {
   chart:
     | AdminDashboardData["topProducts"]
     | AdminDashboardData["returnRateByCategory"];
+  estimatedReason?: string;
   formatter?: (value: number) => string;
   suffix?: string;
 }) {
@@ -206,6 +203,7 @@ function VerticalBarChart({
       title={chart.title}
       description={chart.description}
       source={chart.source}
+      estimatedReason={estimatedReason}
     >
       <div className="flex h-64 min-w-0 items-end gap-3 overflow-hidden">
         {chart.data.map((point) => {
@@ -245,10 +243,12 @@ function VerticalBarChart({
 
 function FunnelChart({
   chart,
+  estimatedReason,
 }: {
   chart:
     | AdminDashboardData["conversionFunnel"]
     | AdminDashboardData["logisticsFunnel"];
+  estimatedReason?: string;
 }) {
   const max = Math.max(...chart.data.map((point) => point.value), 1);
 
@@ -257,6 +257,7 @@ function FunnelChart({
       title={chart.title}
       description={chart.description}
       source={chart.source}
+      estimatedReason={estimatedReason}
     >
       <div className="space-y-3 overflow-hidden">
         {chart.data.map((point, index) => {
@@ -304,6 +305,7 @@ function DonutChart({
       title={chart.title}
       description={chart.description}
       source={chart.source}
+      estimatedReason={DASHBOARD_ESTIMATED_REASONS.paymentMethods}
     >
       <div className="grid gap-6 md:grid-cols-[180px_1fr] md:items-center">
         <div className="relative mx-auto size-44">
@@ -382,6 +384,7 @@ function ScatterChart({
       title={chart.title}
       description={chart.description}
       source={chart.source}
+      estimatedReason={DASHBOARD_ESTIMATED_REASONS.averageTicketScatter}
     >
       <div className="space-y-4">
         <svg viewBox="0 0 100 70" className="h-56 w-full rounded-3xl bg-muted/25 p-3">
@@ -445,6 +448,7 @@ function HeatmapChart({
       title={chart.title}
       description={chart.description}
       source={chart.source}
+      estimatedReason={DASHBOARD_ESTIMATED_REASONS.geoHeatmap}
     >
       <div className="space-y-3 overflow-x-auto">
         {chart.data.map((row) => (
@@ -488,6 +492,7 @@ function StackedBarChart({
       title={chart.title}
       description={chart.description}
       source={chart.source}
+      estimatedReason={DASHBOARD_ESTIMATED_REASONS.orderStatusBoard}
     >
       <div className="space-y-4">
         <div className="flex flex-wrap gap-3 text-xs">
@@ -543,37 +548,50 @@ export function AdminDashboardGrid({
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        <SummaryCard
+        <MetricCard
           label="Receita Confirmada"
           value={formatCentsToBRL(analytics.summary.totalRevenueInCents)}
+          source="real"
           description="Soma dos pedidos pagos capturados pela loja."
         />
-        <SummaryCard
+        <MetricCard
           label="Pedidos Pagos"
           value={formatNumber(analytics.summary.paidOrders)}
+          source="real"
           description="Volume concluído considerado no painel comercial."
         />
-        <SummaryCard
+        <MetricCard
           label="Catálogo Ativo"
           value={formatNumber(analytics.summary.catalogSize)}
+          source="real"
           description="Produtos cadastrados e disponíveis para venda."
         />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3 [&>*]:min-w-0">
         <RevenueChart chart={analytics.revenueTrend} />
-        <VerticalBarChart chart={analytics.topProducts} />
-        <FunnelChart chart={analytics.conversionFunnel} />
+        <VerticalBarChart
+          chart={analytics.topProducts}
+          estimatedReason={DASHBOARD_ESTIMATED_REASONS.topProducts}
+        />
+        <FunnelChart
+          chart={analytics.conversionFunnel}
+          estimatedReason={DASHBOARD_ESTIMATED_REASONS.conversionFunnel}
+        />
         <DonutChart chart={analytics.paymentMethods} />
         <ScatterChart chart={analytics.averageTicketScatter} />
         <HeatmapChart chart={analytics.geoHeatmap} />
         <StackedBarChart chart={analytics.orderStatusBoard} />
         <VerticalBarChart
           chart={analytics.returnRateByCategory}
+          estimatedReason={DASHBOARD_ESTIMATED_REASONS.returnRateByCategory}
           suffix="%"
           formatter={formatNumber}
         />
-        <FunnelChart chart={analytics.logisticsFunnel} />
+        <FunnelChart
+          chart={analytics.logisticsFunnel}
+          estimatedReason={DASHBOARD_ESTIMATED_REASONS.logisticsFunnel}
+        />
       </div>
     </div>
   );
