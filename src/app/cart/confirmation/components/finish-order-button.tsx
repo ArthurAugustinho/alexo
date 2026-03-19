@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-import { createCheckoutSession } from "@/actions/create-checkout-session";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useFinishOrder } from "@/hooks/mutations/use-finish-order";
+import { createCheckoutSession } from "@/lib/actions/checkout";
 
 const FinishOrderButton = () => {
   const [errorDialogIsOpen, setErrorDialogIsOpen] = useState(false);

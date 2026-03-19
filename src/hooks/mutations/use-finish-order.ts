@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { finishOrder } from "@/actions/finish-order";
+import { finishOrder } from "@/lib/actions/orders";
 
 import { getUseCartQueryKey } from "../queries/use-cart";
 

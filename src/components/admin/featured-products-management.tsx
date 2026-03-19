@@ -12,13 +12,6 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { addAdminFeaturedProduct } from "@/actions/add-admin-featured-product";
-import {
-  type FeaturedProductListItem,
-  type FeaturedProductSearchItem,
-} from "@/actions/admin-showcase/schema";
-import { removeAdminFeaturedProduct } from "@/actions/remove-admin-featured-product";
-import { reorderAdminFeaturedProducts } from "@/actions/reorder-admin-featured-products";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +23,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatCentsToBRL } from "@/helpers/money";
+import {
+  addAdminFeaturedProduct,
+  removeAdminFeaturedProduct,
+  reorderAdminFeaturedProducts,
+} from "@/lib/actions/featured";
+import {
+  type FeaturedProductListItem,
+  type FeaturedProductSearchItem,
+} from "@/lib/admin-showcase-schema";
 
 type FeaturedProductsManagementProps = {
   featuredProducts: FeaturedProductListItem[];

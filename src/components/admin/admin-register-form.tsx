@@ -7,11 +7,6 @@ import { useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { registerAdminUser } from "@/actions/register-admin-user";
-import {
-  type RegisterAdminUserInput,
-  registerAdminUserSchema,
-} from "@/actions/register-admin-user/schema";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,6 +24,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { registerAdminUser } from "@/lib/actions/admin-users";
+import {
+  type RegisterAdminUserInput,
+  registerAdminUserSchema,
+} from "@/lib/register-admin-user-schema";
 
 type AdminRegisterFormProps = {
   registrationEnabled: boolean;

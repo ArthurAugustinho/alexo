@@ -1,13 +1,5 @@
 import { asc, desc, ilike } from "drizzle-orm";
 
-import {
-  type AdminBannerListItem,
-  adminBannerListSchema,
-  type FeaturedProductListItem,
-  featuredProductListSchema,
-  type FeaturedProductSearchItem,
-  featuredProductSearchSchema,
-} from "@/actions/admin-showcase/schema";
 import { db } from "@/db";
 import {
   featuredProductTable,
@@ -15,6 +7,14 @@ import {
   productVariantTable,
   seasonalBannerTable,
 } from "@/db/schema";
+import {
+  type AdminBannerListItem,
+  adminBannerListSchema,
+  type FeaturedProductListItem,
+  featuredProductListSchema,
+  type FeaturedProductSearchItem,
+  featuredProductSearchSchema,
+} from "@/lib/admin-showcase-schema";
 import { getPreferredVariant } from "@/lib/product-variant-schema";
 
 type ProductWithVariants = typeof productTable.$inferSelect & {

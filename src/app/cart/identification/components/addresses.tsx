@@ -8,7 +8,6 @@ import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
 import z from "zod";
 
-import { getCart } from "@/actions/get-cart";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,6 +26,7 @@ import { useCreateShippingAddress } from "@/hooks/mutations/use-create-shipping-
 import { useUpdateCartShippingAddress } from "@/hooks/mutations/use-update-cart-shipping-address";
 import { useCart } from "@/hooks/queries/use-cart";
 import { useUserAddresses } from "@/hooks/queries/use-user-addresses";
+import { getCart } from "@/lib/actions/cart";
 
 import { formatAddress } from "../../helpers/address";
 

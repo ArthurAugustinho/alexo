@@ -16,15 +16,6 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import {
-  type AdminBannerFormValues,
-  type AdminBannerInput,
-  type AdminBannerListItem,
-  adminBannerSchema,
-} from "@/actions/admin-showcase/schema";
-import { createAdminBanner } from "@/actions/create-admin-banner";
-import { deleteAdminBanner } from "@/actions/delete-admin-banner";
-import { updateAdminBanner } from "@/actions/update-admin-banner";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -63,6 +54,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  createAdminBanner,
+  deleteAdminBanner,
+  updateAdminBanner,
+} from "@/lib/actions/banners";
+import {
+  type AdminBannerFormValues,
+  type AdminBannerInput,
+  type AdminBannerListItem,
+  adminBannerSchema,
+} from "@/lib/admin-showcase-schema";
 import { cn } from "@/lib/utils";
 
 type BannerManagementProps = {

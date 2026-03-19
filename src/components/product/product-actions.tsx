@@ -5,8 +5,8 @@ import { Loader2, MinusIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { addProductToCart } from "@/actions/add-cart-product";
 import { Button } from "@/components/ui/button";
+import { addProductToCart } from "@/lib/actions/cart";
 import { type ProductVariantModel } from "@/lib/product-variant-schema";
 import { cn } from "@/lib/utils";
 

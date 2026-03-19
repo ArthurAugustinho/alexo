@@ -1,0 +1,6 @@
+{
+  "/page": "app/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/product-variant/[slug]/page": "app/product-variant/[slug]/page.js",
+  "/admin/produtos/[id]/variantes/page": "app/admin/produtos/[id]/variantes/page.js"
+}

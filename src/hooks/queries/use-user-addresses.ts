@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getUserAddresses } from "@/actions/get-user-addresses";
 import { shippingAddressTable } from "@/db/schema";
+import { getUserAddresses } from "@/lib/actions/shipping-addresses";
 
 export const getUserAddressesQueryKey = () => ["user-addresses"] as const;
 

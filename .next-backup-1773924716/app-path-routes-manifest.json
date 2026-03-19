@@ -1,0 +1,6 @@
+{
+  "/page": "/",
+  "/admin/dashboard/page": "/admin/dashboard",
+  "/product-variant/[slug]/page": "/product-variant/[slug]",
+  "/admin/produtos/[id]/variantes/page": "/admin/produtos/[id]/variantes"
+}

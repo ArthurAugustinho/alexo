@@ -15,22 +15,6 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import {
-  type AdminCategoryFormValues,
-  type AdminCategoryInput,
-  adminCategorySchema,
-} from "@/actions/admin-category/schema";
-import {
-  type AdminProductFormValues,
-  type AdminProductInput,
-  adminProductSchema,
-} from "@/actions/admin-product/schema";
-import { createAdminCategory } from "@/actions/create-admin-category";
-import { createAdminProduct } from "@/actions/create-admin-product";
-import { deleteAdminCategory } from "@/actions/delete-admin-category";
-import { deleteAdminProduct } from "@/actions/delete-admin-product";
-import { updateAdminCategory } from "@/actions/update-admin-category";
-import { updateAdminProduct } from "@/actions/update-admin-product";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +45,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  createAdminCategory,
+  deleteAdminCategory,
+  updateAdminCategory,
+} from "@/lib/actions/categories";
+import {
+  createAdminProduct,
+  deleteAdminProduct,
+  updateAdminProduct,
+} from "@/lib/actions/products";
+import {
+  type AdminCategoryFormValues,
+  type AdminCategoryInput,
+  adminCategorySchema,
+} from "@/lib/admin-category-schema";
+import {
+  type AdminProductFormValues,
+  type AdminProductInput,
+  adminProductSchema,
+} from "@/lib/admin-product-schema";
 import { cn } from "@/lib/utils";
 
 type DashboardRole = "admin" | "super_admin";
