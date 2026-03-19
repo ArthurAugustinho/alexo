@@ -16,6 +16,8 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import { Cart } from "./cart";
+import { SearchBar } from "./search-bar";
+import { SearchModal } from "./search-modal";
 
 export const Header = () => {
   const { data: session } = authClient.useSession();
@@ -80,6 +82,8 @@ export const Header = () => {
             </div>
           </SheetContent>
         </Sheet>
+        <SearchModal />
+        <SearchBar />
         <Cart isAuthenticated={Boolean(session?.user)} />
       </div>
     </header>
