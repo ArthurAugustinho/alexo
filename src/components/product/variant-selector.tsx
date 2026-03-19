@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 
 import {
   Popover,
@@ -46,30 +46,58 @@ const VariantSelector = ({
 }: VariantSelectorProps) => {
   const [openUnavailableSize, setOpenUnavailableSize] =
     useState<ProductVariantSize | null>(null);
+  const closeUnavailableSizeTimeoutRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (!openUnavailableSize) {
-      return;
+  function clearUnavailableSizeTimeout() {
+    if (closeUnavailableSizeTimeoutRef.current !== null) {
+      window.clearTimeout(closeUnavailableSizeTimeoutRef.current);
+      closeUnavailableSizeTimeoutRef.current = null;
     }
+  }
 
-    const timeoutId = window.setTimeout(() => {
+  function scheduleUnavailableSizeClose(sizeValue: ProductVariantSize) {
+    clearUnavailableSizeTimeout();
+
+    closeUnavailableSizeTimeoutRef.current = window.setTimeout(() => {
       setOpenUnavailableSize((currentSize) =>
-        currentSize === openUnavailableSize ? null : currentSize,
+        currentSize === sizeValue ? null : currentSize,
       );
+      closeUnavailableSizeTimeoutRef.current = null;
     }, 2500);
+  }
 
-    return () => window.clearTimeout(timeoutId);
-  }, [openUnavailableSize]);
-
-  function handleSizeClick(sizeValue: ProductVariantSize, isAvailable: boolean) {
-    onSizeSelect(sizeValue);
-
-    if (!isAvailable) {
-      setOpenUnavailableSize(sizeValue);
+  function handleSizeClick(item: {
+    sizeValue: ProductVariantSize;
+    stock: number;
+  }) {
+    if (item.stock > 0) {
+      clearUnavailableSizeTimeout();
+      onSizeSelect(item.sizeValue);
+      setOpenUnavailableSize(null);
       return;
     }
 
-    setOpenUnavailableSize(null);
+    clearUnavailableSizeTimeout();
+    setOpenUnavailableSize(item.sizeValue);
+    scheduleUnavailableSizeClose(item.sizeValue);
+  }
+
+  function handleUnavailablePopoverOpenChange(params: {
+    open: boolean;
+    sizeValue: ProductVariantSize;
+    stock: number;
+  }) {
+    if (params.open && params.stock === 0) {
+      clearUnavailableSizeTimeout();
+      setOpenUnavailableSize(params.sizeValue);
+      scheduleUnavailableSizeClose(params.sizeValue);
+      return;
+    }
+
+    if (openUnavailableSize === params.sizeValue) {
+      clearUnavailableSizeTimeout();
+      setOpenUnavailableSize(null);
+    }
   }
 
   return (
@@ -150,9 +178,13 @@ const VariantSelector = ({
                 return (
                   <Popover
                     key={`${variantId ?? "missing"}-${sizeValue}`}
-                    open={openUnavailableSize === sizeValue}
+                    open={openUnavailableSize === sizeValue && stock === 0}
                     onOpenChange={(open) =>
-                      setOpenUnavailableSize(open ? sizeValue : null)
+                      handleUnavailablePopoverOpenChange({
+                        open,
+                        sizeValue,
+                        stock,
+                      })
                     }
                   >
                     <div className="min-w-[68px]">
@@ -180,7 +212,10 @@ const VariantSelector = ({
                               "hover:border-border hover:bg-muted/20",
                           )}
                           onClick={() =>
-                            handleSizeClick(sizeValue, isAvailable)
+                            handleSizeClick({
+                              sizeValue,
+                              stock,
+                            })
                           }
                         >
                           {sizeValue}
