@@ -5,6 +5,32 @@ import {
   productVariantSizeSchema,
 } from "./product-variant-schema";
 
+const optionalPositiveIntegerSchema = z.preprocess(
+  (value) => {
+    if (value === "" || value === null || value === undefined) {
+      return null;
+    }
+
+    return value;
+  },
+  z.coerce
+    .number("Valor invalido.")
+    .int("Informe um numero inteiro.")
+    .min(1, "O valor precisa ser maior que zero.")
+    .nullable(),
+);
+
+const originPostalCodeSchema = z
+  .string()
+  .transform((value) => value.replace(/\D/g, ""))
+  .pipe(
+    z.union([
+      z.string().regex(/^\d{8}$/, "CEP deve conter 8 digitos"),
+      z.literal(""),
+    ]),
+  )
+  .transform((value) => (value === "" ? undefined : value));
+
 const adminProductVariantStockSchema = z.object({
   variantId: z.uuid("Variante invalida.").nullable(),
   color: z
@@ -32,6 +58,7 @@ export const adminProductSchema = z
       .trim()
       .max(100, "A marca pode ter no maximo 100 caracteres.")
       .default(""),
+    originPostalCode: originPostalCodeSchema,
     description: z
       .string("Descricao invalida.")
       .trim()
@@ -55,6 +82,10 @@ export const adminProductSchema = z
     shippingCostInReais: z.coerce
       .number("Frete invalido.")
       .min(0, "O frete nao pode ser negativo."),
+    weightGrams: optionalPositiveIntegerSchema,
+    widthCm: optionalPositiveIntegerSchema,
+    heightCm: optionalPositiveIntegerSchema,
+    lengthCm: optionalPositiveIntegerSchema,
     imageUrl: z.url("Informe uma URL de imagem valida."),
     sizeType: productSizeTypeSchema,
     productSizes: z.array(productVariantSizeSchema).default([]),

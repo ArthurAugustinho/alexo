@@ -12,6 +12,7 @@ export async function getProductBySlug(slug: string) {
   const product = await db.query.productTable.findFirst({
     where: eq(productTable.slug, slug),
     with: {
+      category: true,
       productSizes: {
         orderBy: [asc(productSizeTable.position)],
       },
@@ -35,6 +36,7 @@ export async function getProductById(productId: string) {
   const product = await db.query.productTable.findFirst({
     where: eq(productTable.id, productId),
     with: {
+      category: true,
       productSizes: {
         orderBy: [asc(productSizeTable.position)],
       },

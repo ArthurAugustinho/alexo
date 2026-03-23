@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "www.canva.com",
       },
+      {
+        protocol: "https",
+        hostname: "www.melhorenvio.com.br",
+      },
+      {
+        protocol: "https",
+        hostname: "melhorenvio.com.br",
+      },
+      {
+        protocol: "https",
+        hostname: "sandbox.melhorenvio.com.br",
+      },
     ],
   },
 };

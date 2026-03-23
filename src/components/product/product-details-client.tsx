@@ -10,29 +10,36 @@ import {
   productVariantListSchema,
   type ProductVariantModel,
 } from "@/lib/product-variant-schema";
+import type { SizeChartRange } from "@/lib/size-chart-schema";
 
+import { ShippingCalculator } from "../shipping/shipping-calculator";
 import ProductActions from "./product-actions";
 import ProductImage from "./product-image";
+import { SizeRecommenderModal } from "./size-recommender-modal";
 import VariantSelector from "./variant-selector";
 import { WishlistButton } from "./wishlist-button";
 
 type ProductDetailsClientProps = {
+  categoryName: string;
   initialVariantSlug?: string;
   initialIsWishlisted: boolean;
   productId: string;
   productDescription: string;
   productName: string;
+  sizeChart: SizeChartRange[];
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
   variants: ProductVariantModel[];
 };
 
 const ProductDetailsClient = ({
+  categoryName,
   initialVariantSlug,
   initialIsWishlisted,
   productId,
   productDescription,
   productName,
+  sizeChart,
   sizeType,
   productSizes,
   variants,
@@ -69,6 +76,14 @@ const ProductDetailsClient = ({
         selectedSize={selectedSize}
       />
 
+      <div className="flex justify-end px-5">
+        <SizeRecommenderModal
+          sizeChart={sizeChart}
+          categoryName={categoryName}
+          onSizeSelect={selectSize}
+        />
+      </div>
+
       <VariantSelector
         allSizesForColor={allSizesForColor}
         colorOptions={colorOptions}
@@ -101,6 +116,10 @@ const ProductDetailsClient = ({
         isSelectionComplete={isSelectionComplete}
         selectedVariant={selectedVariant}
       />
+
+      <div className="px-5">
+        <ShippingCalculator productId={productId} quantity={1} />
+      </div>
 
       <div className="px-5">
         <p className="text-shadow-amber-600">{productDescription}</p>

@@ -67,12 +67,17 @@ export type AdminCatalogProduct = {
   id: string;
   name: string;
   brand: string | null;
+  originPostalCode: string | null;
   description: string;
   categoryId: string;
   slug: string;
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
   shippingCostInCents: number;
+  weightGrams: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
+  lengthCm: number | null;
   variantsCount: number;
   variants: Array<{
     id: string;
@@ -470,6 +475,11 @@ export function CategoryManagement({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm" className="rounded-xl">
+                    <Link href={`/admin/categorias/${category.id}/medidas`}>
+                      Medidas
+                    </Link>
+                  </Button>
                   <CategoryEditorDialog
                     mode="edit"
                     category={category}

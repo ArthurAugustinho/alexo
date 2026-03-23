@@ -1,12 +1,16 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 
+import { ShippingCalculator } from "@/components/shipping/shipping-calculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { type ShippingOption } from "@/lib/shipping-schema";
 
 type CartSummaryProduct = {
   id: string;
+  productId: string;
   name: string;
   variantName: string;
   quantity: number;
@@ -16,7 +20,6 @@ type CartSummaryProduct = {
 
 interface CartSummaryProps {
   subtotalInCents: number;
-  totalInCents: number;
   products: CartSummaryProduct[];
 }
 
@@ -27,17 +30,30 @@ const formatCurrency = (valueInCents: number) =>
     minimumFractionDigits: 0,
   }).format(valueInCents / 100);
 
-const CartSummary = ({
-  subtotalInCents,
-  totalInCents,
-  products,
-}: CartSummaryProps) => {
+const CartSummary = ({ subtotalInCents, products }: CartSummaryProps) => {
+  const [selectedShippingOption, setSelectedShippingOption] =
+    useState<ShippingOption | null>(null);
+  const shippingInCents = selectedShippingOption?.priceInCents ?? 0;
+  const totalInCents = subtotalInCents + shippingInCents;
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Seu pedido</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <ShippingCalculator
+          items={products.map((product) => ({
+            productId: product.productId,
+            quantity: product.quantity,
+          }))}
+          note="* Valor estimado. O frete sera confirmado no checkout."
+          selectedOptionId={selectedShippingOption?.id ?? null}
+          onOptionSelect={setSelectedShippingOption}
+        />
+
+        <Separator />
+
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <span>Subtotal</span>
@@ -47,11 +63,31 @@ const CartSummary = ({
           </div>
           <div className="flex items-center justify-between">
             <span>Transporte e Manuseio</span>
-            <span className="text-muted-foreground">Grátis</span>
+            <span
+              className={
+                shippingInCents === 0
+                  ? "text-muted-foreground"
+                  : "font-medium"
+              }
+            >
+              {selectedShippingOption
+                ? shippingInCents === 0
+                  ? "Gratis"
+                  : formatCurrency(shippingInCents)
+                : "Calcule o frete"}
+            </span>
           </div>
           <div className="flex items-center justify-between">
-            <span>Taxa Estimada</span>
-            <span className="text-muted-foreground">—</span>
+            <span>Prazo estimado</span>
+            <span className="text-muted-foreground">
+              {selectedShippingOption
+                ? `Ate ${selectedShippingOption.deliveryTime} ${
+                    selectedShippingOption.deliveryTime === 1
+                      ? "dia util"
+                      : "dias uteis"
+                  }`
+                : "—"}
+            </span>
           </div>
           <div className="flex items-center justify-between text-base font-semibold">
             <span>Total</span>
@@ -79,23 +115,22 @@ const CartSummary = ({
                     {product.variantName}
                   </p>
                   <p className="text-muted-foreground leading-snug">
-                    {product.quantity} {product.quantity > 1 ? "unidades" : "unidade"}
+                    {product.quantity}{" "}
+                    {product.quantity > 1 ? "unidades" : "unidade"}
                   </p>
                   <p className="font-semibold">
-                    {formatCurrency(
-                      product.priceInCents * product.quantity,
-                    )}
+                    {formatCurrency(product.priceInCents * product.quantity)}
                   </p>
                 </div>
               </div>
               <Separator className="mt-4" />
             </div>
           ))}
-          {products.length === 0 && (
+          {products.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground">
-              Seu carrinho está vazio.
+              Seu carrinho esta vazio.
             </p>
-          )}
+          ) : null}
         </div>
       </CardContent>
     </Card>

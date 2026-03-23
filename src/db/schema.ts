@@ -4,6 +4,7 @@ import {
   check,
   index,
   integer,
+  numeric,
   pgEnum,
   pgTable,
   text,
@@ -125,6 +126,7 @@ export const categoryTable = pgTable("category", {
 
 export const categoryRelations = relations(categoryTable, ({ many }) => ({
   products: many(productTable),
+  sizeCharts: many(sizeChartTable),
 }));
 
 export const productTable = pgTable("product", {
@@ -136,8 +138,13 @@ export const productTable = pgTable("product", {
   slug: text().notNull().unique(),
   description: text().notNull(),
   brand: varchar("brand", { length: 100 }),
+  originPostalCode: varchar("origin_postal_code", { length: 8 }),
   sizeType: sizeTypeEnum("size_type").notNull().default("alphabetic"),
   shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
+  weightGrams: integer("weight_grams"),
+  widthCm: integer("width_cm"),
+  heightCm: integer("height_cm"),
+  lengthCm: integer("length_cm"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -205,6 +212,43 @@ export const productVariantRelations = relations(
     orderItems: many(orderItemTable),
   }),
 );
+
+export const sizeChartTable = pgTable(
+  "size_chart",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categoryTable.id, { onDelete: "cascade" }),
+    sizeLabel: varchar("size_label", { length: 10 }).notNull(),
+    bustMin: numeric("bust_min", { mode: "number" }),
+    bustMax: numeric("bust_max", { mode: "number" }),
+    waistMin: numeric("waist_min", { mode: "number" }),
+    waistMax: numeric("waist_max", { mode: "number" }),
+    hipMin: numeric("hip_min", { mode: "number" }),
+    hipMax: numeric("hip_max", { mode: "number" }),
+    heightMin: numeric("height_min", { mode: "number" }),
+    heightMax: numeric("height_max", { mode: "number" }),
+    weightMin: numeric("weight_min", { mode: "number" }),
+    weightMax: numeric("weight_max", { mode: "number" }),
+    position: integer("position").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("size_chart_category_size_label_unique").on(
+      table.categoryId,
+      table.sizeLabel,
+    ),
+    index("size_chart_category_id_idx").on(table.categoryId),
+  ],
+);
+
+export const sizeChartRelations = relations(sizeChartTable, ({ one }) => ({
+  category: one(categoryTable, {
+    fields: [sizeChartTable.categoryId],
+    references: [categoryTable.id],
+  }),
+}));
 
 export const wishlistItemTable = pgTable(
   "wishlist_items",

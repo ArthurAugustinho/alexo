@@ -11,6 +11,7 @@ import { db } from "@/db";
 import { productTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { getProductBySlug } from "@/lib/queries/products";
+import { getSizeChartByCategory } from "@/lib/queries/size-charts";
 import { isProductInWishlist } from "@/lib/queries/wishlist";
 
 interface ProductPageProps {
@@ -90,26 +91,31 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     return notFound();
   }
 
-  const likelyProducts = await db.query.productTable.findMany({
-    where: eq(productTable.categoryId, product.categoryId),
-    with: {
-      variants: true,
-    },
-  });
-  const isWishlisted = session?.user.id
-    ? await isProductInWishlist(session.user.id, product.id)
-    : false;
+  const [likelyProducts, isWishlisted, sizeChartData] = await Promise.all([
+    db.query.productTable.findMany({
+      where: eq(productTable.categoryId, product.categoryId),
+      with: {
+        variants: true,
+      },
+    }),
+    session?.user.id
+      ? isProductInWishlist(session.user.id, product.id)
+      : Promise.resolve(false),
+    getSizeChartByCategory(product.categoryId),
+  ]);
 
   return (
     <>
       <Header />
       <div className="flex flex-col space-y-6">
         <ProductDetailsClient
+          categoryName={product.category.name}
           initialVariantSlug={variantSlug}
           initialIsWishlisted={isWishlisted}
           productId={product.id}
           productDescription={product.description}
           productName={product.name}
+          sizeChart={sizeChartData?.entries ?? []}
           sizeType={product.sizeType}
           productSizes={product.productSizes}
           variants={product.variants}

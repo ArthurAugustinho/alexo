@@ -184,10 +184,15 @@ export async function createAdminProduct(
         categoryId: payload.data.categoryId,
         name: payload.data.name,
         brand: payload.data.brand || null,
+        originPostalCode: payload.data.originPostalCode ?? null,
         description: payload.data.description,
         slug: productSlug,
         sizeType: payload.data.sizeType,
         shippingCostInCents: Math.round(payload.data.shippingCostInReais * 100),
+        weightGrams: payload.data.weightGrams ?? null,
+        widthCm: payload.data.widthCm ?? null,
+        heightCm: payload.data.heightCm ?? null,
+        lengthCm: payload.data.lengthCm ?? null,
       })
       .returning();
 
@@ -308,10 +313,15 @@ export async function updateAdminProduct(
         categoryId: payload.data.categoryId,
         name: payload.data.name,
         brand: payload.data.brand || null,
+        originPostalCode: payload.data.originPostalCode ?? null,
         description: payload.data.description,
         slug: productSlug,
         sizeType: payload.data.sizeType,
         shippingCostInCents: Math.round(payload.data.shippingCostInReais * 100),
+        weightGrams: payload.data.weightGrams ?? null,
+        widthCm: payload.data.widthCm ?? null,
+        heightCm: payload.data.heightCm ?? null,
+        lengthCm: payload.data.lengthCm ?? null,
       })
       .where(eq(productTable.id, existingProduct.id));
 

@@ -4,12 +4,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useTransition } from "react";
-import { useFieldArray, useForm, useWatch } from "react-hook-form";
+import { type Resolver, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
 
 import { createAdminProduct, updateAdminProduct } from "@/lib/actions/products";
 import {
-  type AdminProductFormValues,
   type AdminProductInput,
   adminProductSchema,
 } from "@/lib/admin-product-schema";
@@ -20,6 +20,7 @@ import {
   type ProductSizeModel,
   type ProductSizeType,
 } from "@/lib/product-variant-schema";
+import { formatPostalCode } from "@/lib/shipping-schema";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
@@ -53,9 +54,14 @@ type ProductFormProduct = {
   id: string;
   name: string;
   brand: string | null;
+  originPostalCode: string | null;
   description: string;
   categoryId: string;
   shippingCostInCents: number;
+  weightGrams: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
+  lengthCm: number | null;
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
   variants: ProductFormVariant[];
@@ -180,12 +186,13 @@ export function ProductForm({
 
   const variantStockGrid = useMemo(() => buildVariantStockGrid(product), [product]);
 
-  const defaultValues = useMemo<AdminProductFormValues>(
+  const defaultValues = useMemo<AdminProductInput>(
     () => ({
       productId: product?.id,
       primaryVariantId: product?.primaryVariant?.id,
       name: product?.name ?? "",
       brand: product?.brand ?? "",
+      originPostalCode: formatPostalCode(product?.originPostalCode ?? ""),
       description: product?.description ?? "",
       categoryId: product?.categoryId ?? categories[0]?.id ?? "",
       variantName: product?.primaryVariant?.name ?? "",
@@ -195,6 +202,10 @@ export function ProductForm({
         ? product.primaryVariant.priceInCents / 100
         : 0,
       shippingCostInReais: product ? product.shippingCostInCents / 100 : 0,
+      weightGrams: product?.weightGrams ?? null,
+      widthCm: product?.widthCm ?? null,
+      heightCm: product?.heightCm ?? null,
+      lengthCm: product?.lengthCm ?? null,
       imageUrl: product?.primaryVariant?.imageUrl ?? "",
       sizeType: product?.sizeType ?? "alphabetic",
       productSizes: product?.productSizes.map((size) => size.sizeValue) ?? [],
@@ -203,8 +214,12 @@ export function ProductForm({
     [categories, product, variantStockGrid],
   );
 
-  const form = useForm<AdminProductFormValues, unknown, AdminProductInput>({
-    resolver: zodResolver(adminProductSchema),
+  const formResolver = zodResolver(
+    adminProductSchema,
+  ) as Resolver<AdminProductInput, unknown, AdminProductInput>;
+
+  const form = useForm<AdminProductInput, unknown, AdminProductInput>({
+    resolver: formResolver,
     defaultValues,
   });
 
@@ -754,6 +769,159 @@ export function ProductForm({
                       field.onChange(
                         event.target.value === ""
                           ? 0
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
+          <FormField
+            control={form.control}
+            name="originPostalCode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CEP do fornecedor</FormLabel>
+                <FormControl>
+                  <PatternFormat
+                    format="#####-###"
+                    mask="_"
+                    customInput={Input}
+                    className="rounded-xl"
+                    placeholder="00000-000"
+                    value={field.value ?? ""}
+                    onValueChange={(values) =>
+                      field.onChange(values.formattedValue)
+                    }
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    getInputRef={field.ref}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="weightGrams"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Peso (g)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    className="rounded-xl"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    disabled={field.disabled}
+                    value={typeof field.value === "number" ? field.value : ""}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="widthCm"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Largura (cm)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    className="rounded-xl"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    disabled={field.disabled}
+                    value={typeof field.value === "number" ? field.value : ""}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="heightCm"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Altura (cm)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    className="rounded-xl"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    disabled={field.disabled}
+                    value={typeof field.value === "number" ? field.value : ""}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="lengthCm"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Comprimento (cm)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    className="rounded-xl"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    disabled={field.disabled}
+                    value={typeof field.value === "number" ? field.value : ""}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === ""
+                          ? null
                           : Number(event.target.value),
                       )
                     }
