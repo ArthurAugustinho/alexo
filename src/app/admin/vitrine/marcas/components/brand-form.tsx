@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Image from "next/image";
-import { useTransition } from "react";
+import { ImageIcon, Loader2Icon } from "lucide-react";
+import { useRef, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -24,11 +24,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUploadBrandLogo } from "@/hooks/mutations/use-upload-brand-logo";
 import {
   partnerBrandFormSchema,
   type PartnerBrandFormValues,
 } from "@/lib/partner-brand-schema";
 import type { PartnerBrand } from "@/lib/queries/partner-brands";
+
+const ACCEPTED_MIME_TYPES = ["image/svg+xml", "image/png", "image/jpeg"];
+const MAX_SIZE = 2 * 1024 * 1024;
 
 type BrandFormProps = {
   brand?: PartnerBrand | null;
@@ -38,6 +43,8 @@ type BrandFormProps = {
 
 export function BrandForm({ brand, nextPosition, onSuccess }: BrandFormProps) {
   const [isPending, startTransition] = useTransition();
+  const { upload, isUploading, error: uploadError } = useUploadBrandLogo();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = Boolean(brand);
 
   const form = useForm<PartnerBrandFormValues>({
@@ -52,6 +59,30 @@ export function BrandForm({ brand, nextPosition, onSuccess }: BrandFormProps) {
   });
 
   const watchedLogoUrl = form.watch("logoUrl");
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      toast.error("Formato inválido. Use SVG, PNG ou JPG.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_SIZE) {
+      toast.error("Arquivo muito grande. Máximo 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const url = await upload(file);
+    if (url) {
+      form.setValue("logoUrl", url, { shouldValidate: true });
+    } else {
+      toast.error(uploadError ?? "Falha no upload.");
+    }
+  }
 
   function onSubmit(values: PartnerBrandFormValues) {
     startTransition(async () => {
@@ -113,32 +144,78 @@ export function BrandForm({ brand, nextPosition, onSuccess }: BrandFormProps) {
             name="logoUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>URL da logo</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="https://cdn.exemplo.com/logo.png"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
+                <FormLabel>Logo</FormLabel>
 
-                {watchedLogoUrl && (
-                  <div className="flex h-[90px] w-[110px] items-center justify-center rounded-lg border p-3">
-                    <div className="relative h-12 w-full">
-                      <Image
-                        src={watchedLogoUrl}
-                        alt="Preview da logo"
-                        fill
-                        className="object-contain grayscale"
-                        sizes="110px"
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                )}
+                <Tabs defaultValue="upload">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="upload" className="flex-1">
+                      Upload de arquivo
+                    </TabsTrigger>
+                    <TabsTrigger value="url" className="flex-1">
+                      URL externa
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="upload" className="mt-3 space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".svg,.png,.jpg,.jpeg"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={isUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {isUploading ? (
+                        <>
+                          <Loader2Icon className="size-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        "Selecionar arquivo (SVG, PNG, JPG — máx. 2MB)"
+                      )}
+                    </Button>
+                    {uploadError && (
+                      <p className="text-destructive text-sm">{uploadError}</p>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="url" className="mt-3">
+                    <Input
+                      placeholder="https://cdn.exemplo.com/logo.png"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  </TabsContent>
+                </Tabs>
+
+                <FormMessage />
               </FormItem>
             )}
           />
+
+          <div className="flex h-[60px] w-[80px] items-center justify-center overflow-hidden rounded-lg border bg-muted/30">
+            {watchedLogoUrl ? (
+              <div
+                className="h-full w-full grayscale"
+                style={{
+                  backgroundImage: `url(${watchedLogoUrl})`,
+                  backgroundSize: "contain",
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "center",
+                }}
+              />
+            ) : (
+              <ImageIcon className="text-muted-foreground size-6" />
+            )}
+          </div>
 
           <FormField
             control={form.control}
@@ -177,7 +254,11 @@ export function BrandForm({ brand, nextPosition, onSuccess }: BrandFormProps) {
             )}
           />
 
-          <Button type="submit" className="w-full" disabled={isPending}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isPending || isUploading}
+          >
             {isPending
               ? "Salvando..."
               : isEditing
