@@ -7,17 +7,22 @@ import { Header } from "@/components/common/header";
 import { BannerCarouselSkeleton } from "@/components/home/banner-carousel-skeleton";
 import { BannerShowcase } from "@/components/home/banner-showcase";
 import { BestSellersSection } from "@/components/home/best-sellers-section";
+import { BrandShowcase } from "@/components/home/brand-showcase";
 import { NewArrivalsSection } from "@/components/home/new-arrivals-section";
 import { ProductCarouselSkeleton } from "@/components/home/product-carousel-skeleton";
 import { db } from "@/db";
 import { categoryTable } from "@/db/schema";
+import { getActivePartnerBrands } from "@/lib/queries/partner-brands";
 
 const Home = async () => {
   noStore();
 
-  const categories = await db.query.categoryTable.findMany({
-    orderBy: [categoryTable.name],
-  });
+  const [categories, brands] = await Promise.all([
+    db.query.categoryTable.findMany({
+      orderBy: [categoryTable.name],
+    }),
+    getActivePartnerBrands(),
+  ]);
 
   return (
     <>
@@ -26,6 +31,8 @@ const Home = async () => {
         <Suspense fallback={<BannerCarouselSkeleton />}>
           <BannerShowcase />
         </Suspense>
+
+        <BrandShowcase brands={brands} />
 
         <Suspense
           fallback={<ProductCarouselSkeleton title="Mais vendidos" />}

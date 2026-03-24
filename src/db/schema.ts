@@ -469,3 +469,23 @@ export const announcementBarTable = pgTable(
     ),
   ],
 );
+
+export const partnerBrandTable = pgTable(
+  "partner_brands",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    name: varchar("name", { length: 100 }).notNull(),
+    logoUrl: varchar("logo_url", { length: 500 }).notNull(),
+    linkUrl: varchar("link_url", { length: 500 }),
+    isActive: boolean("is_active").notNull().default(true),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("partner_brands_active_position_idx").on(
+      table.isActive,
+      table.position,
+    ),
+  ],
+);
