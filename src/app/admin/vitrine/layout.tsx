@@ -1,4 +1,4 @@
-import { ImageIcon, LayoutTemplateIcon, SparklesIcon } from "lucide-react";
+import { BellIcon, ImageIcon, LayoutTemplateIcon, SparklesIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -53,6 +53,12 @@ export default async function AdminStorefrontLayout({
             </div>
 
             <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" className="rounded-xl">
+                <Link href="/admin/vitrine/avisos">
+                  <BellIcon />
+                  Avisos
+                </Link>
+              </Button>
               <Button asChild variant="outline" className="rounded-xl">
                 <Link href="/admin/vitrine/banners">
                   <ImageIcon />

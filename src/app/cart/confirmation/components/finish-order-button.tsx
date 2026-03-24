@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
-import { createCheckoutSession } from "@/actions/create-checkout-session";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useFinishOrder } from "@/hooks/mutations/use-finish-order";
+import { createCheckoutSession } from "@/lib/actions/checkout";
 
 const FinishOrderButton = () => {
   const [errorDialogIsOpen, setErrorDialogIsOpen] = useState(false);
@@ -30,20 +30,24 @@ const FinishOrderButton = () => {
 
       const { orderId } = await finishOrderMutation.mutateAsync();
 
-      const checkoutSession = await createCheckoutSession({ orderId });
+      const sessionResult = await createCheckoutSession({ orderId });
+      if (!sessionResult.success || !sessionResult.sessionId) {
+        throw new Error(
+          sessionResult.message ?? "Não foi possível iniciar o pagamento.",
+        );
+      }
 
       const stripe = await loadStripe(
         process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
       );
-
-      if (!stripe || !checkoutSession.id) {
-        throw new Error("Payment provider not available");
+      if (!stripe) {
+        throw new Error("Provedor de pagamento indisponível.");
       }
 
       setIsRedirecting(true);
 
       const { error } = await stripe.redirectToCheckout({
-        sessionId: checkoutSession.id,
+        sessionId: sessionResult.sessionId,
       });
 
       if (error) {

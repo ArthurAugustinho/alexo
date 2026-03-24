@@ -20,15 +20,6 @@ export const userRoleEnum = pgEnum("user_role", [
   "super_admin",
 ]);
 
-export const productVariantSizeEnum = pgEnum("product_variant_size", [
-  "PP",
-  "P",
-  "M",
-  "G",
-  "GG",
-  "GGG",
-]);
-
 export const sizeTypeEnum = pgEnum("size_type", [
   "alphabetic",
   "numeric",
@@ -133,7 +124,7 @@ export const productTable = pgTable("product", {
   id: uuid().primaryKey().defaultRandom(),
   categoryId: uuid("category_id")
     .notNull()
-    .references(() => categoryTable.id, { onDelete: "set null" }),
+    .references(() => categoryTable.id, { onDelete: "restrict" }),
   name: text().notNull(),
   slug: text().notNull().unique(),
   description: text().notNull(),
@@ -397,7 +388,7 @@ export const orderTable = pgTable("order", {
     .references(() => userTable.id, { onDelete: "cascade" }),
   shippingAddressId: uuid("shipping_address_id")
     .notNull()
-    .references(() => shippingAddressTable.id, { onDelete: "set null" }),
+    .references(() => shippingAddressTable.id, { onDelete: "restrict" }),
   recipientName: text().notNull(),
   street: text().notNull(),
   number: text().notNull(),
@@ -450,3 +441,31 @@ export const orderItemRelations = relations(orderItemTable, ({ one }) => ({
     references: [productVariantTable.id],
   }),
 }));
+
+export const announcementBarTable = pgTable(
+  "announcement_bars",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    text: varchar("text", { length: 255 }).notNull(),
+    linkUrl: varchar("link_url", { length: 500 }),
+    bgColor: varchar("bg_color", { length: 7 }).notNull().default("#000000"),
+    textColor: varchar("text_color", { length: 7 }).notNull().default("#FFFFFF"),
+    isActive: boolean("is_active").notNull().default(true),
+    startDate: timestamp("start_date"),
+    endDate: timestamp("end_date"),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("announcement_bars_active_dates_idx").on(
+      table.isActive,
+      table.startDate,
+      table.endDate,
+    ),
+    check(
+      "announcement_bars_dates_check",
+      sql`${table.startDate} IS NULL OR ${table.endDate} IS NULL OR ${table.startDate} < ${table.endDate}`,
+    ),
+  ],
+);

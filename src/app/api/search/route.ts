@@ -45,17 +45,8 @@ export async function GET(request: NextRequest) {
     .filter(Boolean)
     .join("%")}%`;
 
-  // Habilite a extensao uma vez no PostgreSQL para busca sem acentos:
+  // Extensao unaccent deve ser habilitada no banco uma unica vez:
   // CREATE EXTENSION IF NOT EXISTS unaccent;
-  try {
-    await db.execute(sql.raw("CREATE EXTENSION IF NOT EXISTS unaccent"));
-  } catch {
-    // Opcao B sem `unaccent` no banco:
-    // where: sql<boolean>`lower(${productTable.name}) ILIKE lower(${normalizedPattern})`
-    // Como esse fallback nao cobre acentos, usamos a alternativa em memoria abaixo
-    // caso a query com `unaccent` nao esteja disponivel.
-  }
-
   try {
     const products = await db.query.productTable.findMany({
       columns: {

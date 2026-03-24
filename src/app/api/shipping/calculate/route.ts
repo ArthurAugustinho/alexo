@@ -139,9 +139,11 @@ export async function POST(request: Request) {
         Accept: "application/json",
         Authorization: `Bearer ${melhorEnvioToken}`,
         "Content-Type": "application/json",
+        "User-Agent": "Alexo (contato@alexo.com.br)",
       },
       body: JSON.stringify(melhorEnvioPayload),
       cache: "no-store",
+      signal: AbortSignal.timeout(8000),
     },
   ).catch((error) => {
     console.error("[Shipping] Nao foi possivel conectar ao Melhor Envio:", error);

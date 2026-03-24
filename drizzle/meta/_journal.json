@@ -71,6 +71,13 @@
       "when": 1773939991686,
       "tag": "0009_add_stock_and_convert_variant_size",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774293107268,
+      "tag": "0010_messy_zuras",
+      "breakpoints": true
     }
   ]
 }

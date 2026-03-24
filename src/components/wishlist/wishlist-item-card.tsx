@@ -8,10 +8,10 @@ import { useRouter } from "next/navigation";
 import { useOptimistic, useTransition } from "react";
 import { toast } from "sonner";
 
-import { addProductToCart } from "@/actions/add-cart-product";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCentsToBRL } from "@/helpers/money";
+import { addProductToCart } from "@/lib/actions/cart";
 import { removeFromWishlist } from "@/lib/actions/wishlist";
 import { type WishlistItem } from "@/lib/queries/wishlist";
 

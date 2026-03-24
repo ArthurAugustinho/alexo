@@ -15,11 +15,16 @@ export const POST = async (request: Request) => {
   }
   const text = await request.text();
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  const event = stripe.webhooks.constructEvent(
-    text,
-    signature,
-    process.env.STRIPE_WEBHOOK_SECRET,
-  );
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(
+      text,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET,
+    );
+  } catch {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+  }
   if (event.type === "checkout.session.completed") {
     console.log("Checkout session completed");
     const session = event.data.object as Stripe.Checkout.Session;

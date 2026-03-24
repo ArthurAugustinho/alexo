@@ -16,14 +16,16 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import {
+  createAdminCategory,
+  deleteAdminCategory,
+  updateAdminCategory,
+} from "@/lib/actions/categories";
+import { deleteAdminProduct } from "@/lib/actions/products";
+import {
   type AdminCategoryFormValues,
   type AdminCategoryInput,
   adminCategorySchema,
-} from "@/actions/admin-category/schema";
-import { createAdminCategory } from "@/actions/create-admin-category";
-import { deleteAdminCategory } from "@/actions/delete-admin-category";
-import { updateAdminCategory } from "@/actions/update-admin-category";
-import { deleteAdminProduct } from "@/lib/actions/products";
+} from "@/lib/admin-category-schema";
 import {
   type ProductSizeModel,
   type ProductSizeType,

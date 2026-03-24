@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   formatPostalCode,
@@ -25,21 +25,18 @@ type UseShippingCalculatorResult = {
   reset: () => void;
 };
 
-function getInitialPostalCode() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  return formatPostalCode(
-    window.localStorage.getItem(LAST_POSTAL_CODE_STORAGE_KEY) ?? "",
-  );
-}
-
 export function useShippingCalculator({
   productId,
   quantity = 1,
 }: UseShippingCalculatorParams): UseShippingCalculatorResult {
-  const [postalCode, setPostalCodeState] = useState(getInitialPostalCode);
+  const [postalCode, setPostalCodeState] = useState("");
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(LAST_POSTAL_CODE_STORAGE_KEY);
+    if (stored) {
+      setPostalCodeState(formatPostalCode(stored));
+    }
+  }, []);
   const [results, setResults] = useState<ShippingOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

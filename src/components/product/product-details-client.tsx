@@ -4,10 +4,8 @@ import { formatCentsToBRL } from "@/helpers/money";
 import { useVariantSelector } from "@/hooks/use-variant-selector";
 import {
   getPreferredVariant,
-  productSizeListSchema,
   type ProductSizeModel,
   type ProductSizeType,
-  productVariantListSchema,
   type ProductVariantModel,
 } from "@/lib/product-variant-schema";
 import type { SizeChartRange } from "@/lib/size-chart-schema";
@@ -44,8 +42,6 @@ const ProductDetailsClient = ({
   productSizes,
   variants,
 }: ProductDetailsClientProps) => {
-  const parsedVariants = productVariantListSchema.parse(variants);
-  const parsedProductSizes = productSizeListSchema.parse(productSizes);
   const {
     allSizesForColor,
     colorOptions,
@@ -58,12 +54,12 @@ const ProductDetailsClient = ({
     selectSize,
   } = useVariantSelector({
     initialVariantSlug,
-    variants: parsedVariants,
+    variants,
     sizeType,
-    productSizes: parsedProductSizes,
+    productSizes,
   });
 
-  const fallbackVariant = getPreferredVariant(parsedVariants);
+  const fallbackVariant = getPreferredVariant(variants);
   const displayedPriceInCents =
     selectedVariant?.priceInCents ?? fallbackVariant?.priceInCents ?? 0;
 

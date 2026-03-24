@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { addProductToCart } from "@/actions/add-cart-product";
+import { addProductToCart } from "@/lib/actions/cart";
 
 import { getUseCartQueryKey } from "../queries/use-cart";
 
