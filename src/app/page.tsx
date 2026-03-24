@@ -8,20 +8,23 @@ import { BannerCarouselSkeleton } from "@/components/home/banner-carousel-skelet
 import { BannerShowcase } from "@/components/home/banner-showcase";
 import { BestSellersSection } from "@/components/home/best-sellers-section";
 import { BrandShowcase } from "@/components/home/brand-showcase";
+import { FeatureHighlight } from "@/components/home/feature-highlight";
 import { NewArrivalsSection } from "@/components/home/new-arrivals-section";
 import { ProductCarouselSkeleton } from "@/components/home/product-carousel-skeleton";
 import { db } from "@/db";
 import { categoryTable } from "@/db/schema";
+import { getActiveHighlightCards } from "@/lib/queries/highlight-cards";
 import { getActivePartnerBrands } from "@/lib/queries/partner-brands";
 
 const Home = async () => {
   noStore();
 
-  const [categories, brands] = await Promise.all([
+  const [categories, brands, highlightCards] = await Promise.all([
     db.query.categoryTable.findMany({
       orderBy: [categoryTable.name],
     }),
     getActivePartnerBrands(),
+    getActiveHighlightCards(),
   ]);
 
   return (
@@ -39,6 +42,8 @@ const Home = async () => {
         >
           <BestSellersSection />
         </Suspense>
+
+        <FeatureHighlight cards={highlightCards} />
 
         <div className="px-5">
           <CategorySelector categories={categories} />

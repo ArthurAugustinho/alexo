@@ -470,6 +470,31 @@ export const announcementBarTable = pgTable(
   ],
 );
 
+export const highlightCardTable = pgTable(
+  "highlight_cards",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    title: varchar("title", { length: 100 }).notNull(),
+    imageUrl: varchar("image_url", { length: 500 }).notNull(),
+    linkUrl: varchar("link_url", { length: 500 }).notNull(),
+    position: integer("position").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("highlight_cards_position_unique").on(table.position),
+    index("highlight_cards_active_position_idx").on(
+      table.isActive,
+      table.position,
+    ),
+    check(
+      "highlight_cards_position_check",
+      sql`${table.position} >= 1 AND ${table.position} <= 3`,
+    ),
+  ],
+);
+
 export const partnerBrandTable = pgTable(
   "partner_brands",
   {
