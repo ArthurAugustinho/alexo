@@ -549,3 +549,23 @@ export const socialLinkTable = pgTable(
     ),
   ],
 );
+
+export const trustBadgeTable = pgTable(
+  "trust_badges",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    label: varchar("label", { length: 100 }).notNull(),
+    imageUrl: varchar("image_url", { length: 500 }).notNull(),
+    linkUrl: varchar("link_url", { length: 500 }),
+    isActive: boolean("is_active").notNull().default(true),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("trust_badges_active_position_idx").on(
+      table.isActive,
+      table.position,
+    ),
+  ],
+);

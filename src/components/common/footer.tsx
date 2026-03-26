@@ -21,6 +21,9 @@ import {
 import { getAllCategories } from "@/lib/queries/categories";
 import { getActiveFaqItems } from "@/lib/queries/faq";
 import { getActiveSocialLinks } from "@/lib/queries/social-links";
+import { getActiveTrustBadges } from "@/lib/queries/trust-badges";
+
+import { TrustBadges } from "./trust-badges";
 
 const PLATFORM_ICONS: Record<string, LucideIcon> = {
   instagram: InstagramIcon,
@@ -42,10 +45,11 @@ const INSTITUTIONAL_LINKS = [
 ];
 
 export async function Footer() {
-  const [faqItems, socialLinks, categories] = await Promise.all([
+  const [faqItems, socialLinks, categories, badges] = await Promise.all([
     getActiveFaqItems(),
     getActiveSocialLinks(),
     getAllCategories(),
+    getActiveTrustBadges(),
   ]);
 
   return (
@@ -152,10 +156,11 @@ export async function Footer() {
           )}
         </div>
 
-        <div className="mt-12 border-t border-zinc-800 pt-8 text-center">
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-800 pt-8">
           <p className="text-xs text-zinc-600" suppressHydrationWarning>
             © {new Date().getFullYear()} Alexo. Todos os direitos reservados.
           </p>
+          <TrustBadges badges={badges} />
         </div>
       </div>
     </footer>
