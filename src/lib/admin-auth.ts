@@ -108,6 +108,16 @@ export async function requireAdminSession() {
   return result;
 }
 
+export async function requireAdminSessionOrThrow() {
+  const result = await getCurrentSessionWithRole();
+
+  if (!result.session?.user || !isAdminRole(result.role)) {
+    throw new Error("Unauthorized");
+  }
+
+  return result;
+}
+
 export async function requireSuperAdminSessionOrThrow() {
   const result = await getCurrentSessionWithRole();
 

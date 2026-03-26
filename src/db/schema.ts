@@ -514,3 +514,38 @@ export const partnerBrandTable = pgTable(
     ),
   ],
 );
+
+export const faqItemTable = pgTable(
+  "faq_items",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    question: varchar("question", { length: 300 }).notNull(),
+    answer: text("answer").notNull(),
+    position: integer("position").notNull().default(0),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("faq_items_active_position_idx").on(table.isActive, table.position),
+  ],
+);
+
+export const socialLinkTable = pgTable(
+  "social_links",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    platform: varchar("platform", { length: 50 }).notNull(),
+    url: varchar("url", { length: 500 }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("social_links_platform_unique").on(table.platform),
+    index("social_links_active_position_idx").on(
+      table.isActive,
+      table.position,
+    ),
+  ],
+);

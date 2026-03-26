@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { z } from "zod";
 
-import Footer from "@/components/common/footer";
 import { Header } from "@/components/common/header";
 import { ActiveFilters } from "@/components/search/active-filters";
 import { FilterDrawer } from "@/components/search/filter-drawer";
@@ -157,7 +156,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           </div>
         </div>
       </main>
-      <Footer />
     </>
   );
 }

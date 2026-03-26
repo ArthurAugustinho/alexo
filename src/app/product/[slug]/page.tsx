@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
-import Footer from "@/components/common/footer";
 import { Header } from "@/components/common/header";
 import ProductList from "@/components/common/product-list";
 import ProductDetailsClient from "@/components/product/product-details-client";
@@ -122,8 +121,6 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
         />
 
         <ProductList title="Talvez voce goste" products={likelyProducts} />
-
-        <Footer />
       </div>
     </>
   );

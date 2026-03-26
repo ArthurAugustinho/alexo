@@ -2,7 +2,6 @@ import { unstable_noStore as noStore } from "next/cache";
 import { Suspense } from "react";
 
 import CategorySelector from "@/components/common/category-selector";
-import Footer from "@/components/common/footer";
 import { Header } from "@/components/common/header";
 import { BannerCarouselSkeleton } from "@/components/home/banner-carousel-skeleton";
 import { BannerShowcase } from "@/components/home/banner-showcase";
@@ -53,7 +52,6 @@ const Home = async () => {
           <NewArrivalsSection />
         </Suspense>
 
-        <Footer />
       </div>
     </>
   );

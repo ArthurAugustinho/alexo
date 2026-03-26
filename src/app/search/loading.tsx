@@ -1,4 +1,3 @@
-import Footer from "@/components/common/footer";
 import { Header } from "@/components/common/header";
 
 export default function SearchLoading() {
@@ -38,7 +37,6 @@ export default function SearchLoading() {
           </div>
         </div>
       </main>
-      <Footer />
     </>
   );
 }

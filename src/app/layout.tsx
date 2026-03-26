@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import { AnnouncementBar } from "@/components/common/announcement-bar";
 import { CategoryNav } from "@/components/common/category-nav";
+import { Footer } from "@/components/common/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { getActiveAnnouncementBars } from "@/lib/queries/announcement-bars";
 import ReactQueryProvider from "@/providers/react-query";
@@ -44,6 +45,7 @@ export default async function RootLayout({
           <CategoryNav />
           {children}
         </ReactQueryProvider>
+        <Footer />
         <Toaster position="top-center" />
       </body>
     </html>

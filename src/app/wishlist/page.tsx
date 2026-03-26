@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import Footer from "@/components/common/footer";
 import { Header } from "@/components/common/header";
 import { Button } from "@/components/ui/button";
 import { WishlistClearButton } from "@/components/wishlist/wishlist-clear-button";
@@ -65,8 +64,6 @@ const WishlistPage = async () => {
           </div>
         )}
       </main>
-
-      <Footer />
     </>
   );
 };
