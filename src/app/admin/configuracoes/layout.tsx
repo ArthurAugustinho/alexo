@@ -1,4 +1,4 @@
-import { LayoutTemplateIcon, Settings2Icon } from "lucide-react";
+import { LayoutTemplateIcon, MessageCircleIcon, Settings2Icon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -58,6 +58,12 @@ export default async function AdminConfiguracoesLayout({
                 <Link href="/admin/configuracoes/footer">
                   <Settings2Icon />
                   Footer
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl">
+                <Link href="/admin/configuracoes/atendimento">
+                  <MessageCircleIcon />
+                  Atendimento
                 </Link>
               </Button>
               <Button asChild variant="ghost" className="rounded-xl">

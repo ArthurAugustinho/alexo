@@ -550,6 +550,16 @@ export const socialLinkTable = pgTable(
   ],
 );
 
+export const supportWidgetConfigTable = pgTable("support_widget_config", {
+  id: uuid().primaryKey().defaultRandom(),
+  whatsappNumber: varchar("whatsapp_number", { length: 20 }),
+  whatsappMessage: varchar("whatsapp_message", { length: 255 }),
+  supportEmail: varchar("support_email", { length: 255 }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const trustBadgeTable = pgTable(
   "trust_badges",
   {

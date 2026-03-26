@@ -7,8 +7,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AnnouncementBar } from "@/components/common/announcement-bar";
 import { CategoryNav } from "@/components/common/category-nav";
 import { Footer } from "@/components/common/footer";
+import { SupportWidget } from "@/components/common/support-widget";
 import { Toaster } from "@/components/ui/sonner";
 import { getActiveAnnouncementBars } from "@/lib/queries/announcement-bars";
+import { getSupportWidgetConfig } from "@/lib/queries/support-widget";
 import ReactQueryProvider from "@/providers/react-query";
 
 const geistSans = Geist({
@@ -32,7 +34,10 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   noStore();
-  const bars = await getActiveAnnouncementBars();
+  const [bars, widgetConfig] = await Promise.all([
+    getActiveAnnouncementBars(),
+    getSupportWidgetConfig(),
+  ]);
 
   return (
     <html lang="pt-BR" suppressHydrationWarning>
@@ -46,6 +51,7 @@ export default async function RootLayout({
           {children}
         </ReactQueryProvider>
         <Footer />
+        {widgetConfig && <SupportWidget config={widgetConfig} />}
         <Toaster position="top-center" />
       </body>
     </html>
