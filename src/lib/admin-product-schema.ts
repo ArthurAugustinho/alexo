@@ -87,6 +87,11 @@ export const adminProductSchema = z
     heightCm: optionalPositiveIntegerSchema,
     lengthCm: optionalPositiveIntegerSchema,
     imageUrl: z.url("Informe uma URL de imagem valida."),
+    videoUrl: z
+      .string()
+      .url("Informe uma URL de vídeo válida.")
+      .or(z.literal(""))
+      .optional(),
     sizeType: productSizeTypeSchema,
     productSizes: z.array(productVariantSizeSchema).default([]),
     variantStocks: z.array(adminProductVariantStockSchema).default([]),

@@ -1,13 +1,10 @@
-import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { Header } from "@/components/common/header";
-import ProductList from "@/components/common/product-list";
 import ProductDetailsClient from "@/components/product/product-details-client";
-import { db } from "@/db";
-import { productTable } from "@/db/schema";
+import { RelatedProducts } from "@/components/product/related-products";
 import { auth } from "@/lib/auth";
 import { getProductBySlug } from "@/lib/queries/products";
 import { getSizeChartByCategory } from "@/lib/queries/size-charts";
@@ -90,13 +87,7 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     return notFound();
   }
 
-  const [likelyProducts, isWishlisted, sizeChartData] = await Promise.all([
-    db.query.productTable.findMany({
-      where: eq(productTable.categoryId, product.categoryId),
-      with: {
-        variants: true,
-      },
-    }),
+  const [isWishlisted, sizeChartData] = await Promise.all([
     session?.user.id
       ? isProductInWishlist(session.user.id, product.id)
       : Promise.resolve(false),
@@ -106,7 +97,7 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
   return (
     <>
       <Header />
-      <div className="flex flex-col space-y-6">
+      <div className="flex flex-col space-y-10 py-6">
         <ProductDetailsClient
           categoryName={product.category.name}
           initialVariantSlug={variantSlug}
@@ -114,13 +105,18 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
           productId={product.id}
           productDescription={product.description}
           productName={product.name}
+          productBrand={product.brand}
+          videoUrl={product.videoUrl}
           sizeChart={sizeChartData?.entries ?? []}
           sizeType={product.sizeType}
           productSizes={product.productSizes}
           variants={product.variants}
         />
 
-        <ProductList title="Talvez voce goste" products={likelyProducts} />
+        <RelatedProducts
+          categoryId={product.categoryId}
+          excludeProductId={product.id}
+        />
       </div>
     </>
   );

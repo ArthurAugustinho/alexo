@@ -42,13 +42,13 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
         suppressHydrationWarning
       >
         <AnnouncementBar bars={bars} />
         <ReactQueryProvider>
           <CategoryNav />
-          {children}
+          <main className="flex-1">{children}</main>
         </ReactQueryProvider>
         <Footer />
         {widgetConfig && <SupportWidget config={widgetConfig} />}

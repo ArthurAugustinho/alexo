@@ -54,6 +54,7 @@ type ProductFormProduct = {
   id: string;
   name: string;
   brand: string | null;
+  videoUrl: string | null;
   originPostalCode: string | null;
   description: string;
   categoryId: string;
@@ -207,6 +208,7 @@ export function ProductForm({
       heightCm: product?.heightCm ?? null,
       lengthCm: product?.lengthCm ?? null,
       imageUrl: product?.primaryVariant?.imageUrl ?? "",
+      videoUrl: product?.videoUrl ?? "",
       sizeType: product?.sizeType ?? "alphabetic",
       productSizes: product?.productSizes.map((size) => size.sizeValue) ?? [],
       variantStocks: variantStockGrid,
@@ -944,6 +946,25 @@ export function ProductForm({
                   <ImageIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
                   <Input className="rounded-xl pl-9" {...field} />
                 </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="videoUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Vídeo do produto (opcional)</FormLabel>
+              <FormControl>
+                <Input
+                  className="rounded-xl"
+                  placeholder="https://www.youtube.com/watch?v=... ou .mp4"
+                  {...field}
+                  value={field.value ?? ""}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import { formatCentsToBRL } from "@/helpers/money";
 import { useVariantSelector } from "@/hooks/use-variant-selector";
 import {
@@ -12,7 +14,7 @@ import type { SizeChartRange } from "@/lib/size-chart-schema";
 
 import { ShippingCalculator } from "../shipping/shipping-calculator";
 import ProductActions from "./product-actions";
-import ProductImage from "./product-image";
+import { ProductGallery } from "./product-gallery";
 import { SizeRecommenderModal } from "./size-recommender-modal";
 import VariantSelector from "./variant-selector";
 import { WishlistButton } from "./wishlist-button";
@@ -24,6 +26,8 @@ type ProductDetailsClientProps = {
   productId: string;
   productDescription: string;
   productName: string;
+  productBrand?: string | null;
+  videoUrl?: string | null;
   sizeChart: SizeChartRange[];
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
@@ -37,6 +41,8 @@ const ProductDetailsClient = ({
   productId,
   productDescription,
   productName,
+  productBrand,
+  videoUrl,
   sizeChart,
   sizeType,
   productSizes,
@@ -63,62 +69,93 @@ const ProductDetailsClient = ({
   const displayedPriceInCents =
     selectedVariant?.priceInCents ?? fallbackVariant?.priceInCents ?? 0;
 
+  // Deduplicated list of unique variant images (one per color)
+  const allImages = useMemo(() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const variant of variants) {
+      if (!seen.has(variant.imageUrl)) {
+        seen.add(variant.imageUrl);
+        result.push(variant.imageUrl);
+      }
+    }
+    return result;
+  }, [variants]);
+
   return (
-    <div className="flex flex-col space-y-6">
-      <ProductImage
-        imageUrl={displayImageUrl}
+    <div className="lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:px-8">
+      {/* Gallery: occupies the first column on desktop, full-width on mobile */}
+      <ProductGallery
+        images={allImages}
+        videoUrl={videoUrl}
         productName={productName}
-        selectedColor={selectedColor}
-        selectedSize={selectedSize}
+        activeImageUrl={displayImageUrl}
       />
 
-      <div className="flex justify-end px-5">
-        <SizeRecommenderModal
-          sizeChart={sizeChart}
-          categoryName={categoryName}
-          onSizeSelect={selectSize}
-        />
-      </div>
-
-      <VariantSelector
-        allSizesForColor={allSizesForColor}
-        colorOptions={colorOptions}
-        selectedColor={selectedColor}
-        selectedSize={selectedSize}
-        onColorSelect={selectColor}
-        onSizeSelect={selectSize}
-      />
-
-      <div className="flex items-start justify-between gap-4 px-5">
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold">{productName}</h2>
-          <h3 className="text-muted-foreground text-sm">
-            {selectedColor && selectedSize
-              ? `${selectedColor} - ${selectedSize}`
-              : "Selecione cor e tamanho"}
-          </h3>
-          <h3 className="text-lg font-semibold">
-            {formatCentsToBRL(displayedPriceInCents)}
-          </h3>
+      {/* Info panel */}
+      <div className="mt-6 space-y-5 px-5 lg:mt-0 lg:px-0">
+        {/* Name & brand */}
+        <div>
+          <h1 className="text-xl font-semibold">{productName}</h1>
+          {productBrand && (
+            <p className="text-muted-foreground mt-0.5 text-sm">{productBrand}</p>
+          )}
         </div>
 
-        <WishlistButton
-          productId={productId}
-          initialIsWishlisted={initialIsWishlisted}
+        {/* Price + Wishlist */}
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-2xl font-bold">
+            {formatCentsToBRL(displayedPriceInCents)}
+          </p>
+          <WishlistButton
+            productId={productId}
+            initialIsWishlisted={initialIsWishlisted}
+          />
+        </div>
+
+        {/* Color + Size selectors */}
+        <VariantSelector
+          allSizesForColor={allSizesForColor}
+          colorOptions={colorOptions}
+          selectedColor={selectedColor}
+          selectedSize={selectedSize}
+          onColorSelect={selectColor}
+          onSizeSelect={selectSize}
         />
-      </div>
 
-      <ProductActions
-        isSelectionComplete={isSelectionComplete}
-        selectedVariant={selectedVariant}
-      />
+        {/* Size recommender */}
+        <div className="flex justify-end">
+          <SizeRecommenderModal
+            sizeChart={sizeChart}
+            categoryName={categoryName}
+            onSizeSelect={selectSize}
+          />
+        </div>
 
-      <div className="px-5">
+        {/* Selected variant label */}
+        {(selectedColor ?? selectedSize) && (
+          <p className="text-muted-foreground text-sm">
+            {selectedColor && selectedSize
+              ? `${selectedColor} — ${selectedSize}`
+              : selectedColor ?? selectedSize}
+          </p>
+        )}
+
+        {/* Quantity + Add to cart + Buy now */}
+        <ProductActions
+          isSelectionComplete={isSelectionComplete}
+          selectedVariant={selectedVariant}
+        />
+
+        {/* Description */}
+        <div className="border-t pt-4">
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {productDescription}
+          </p>
+        </div>
+
+        {/* Shipping calculator */}
         <ShippingCalculator productId={productId} quantity={1} />
-      </div>
-
-      <div className="px-5">
-        <p className="text-shadow-amber-600">{productDescription}</p>
       </div>
     </div>
   );

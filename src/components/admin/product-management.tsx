@@ -69,6 +69,7 @@ export type AdminCatalogProduct = {
   id: string;
   name: string;
   brand: string | null;
+  videoUrl: string | null;
   originPostalCode: string | null;
   description: string;
   categoryId: string;

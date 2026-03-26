@@ -127,7 +127,7 @@ export function SupportWidget({ config }: SupportWidgetProps) {
     <>
       <div
         ref={containerRef}
-        className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3"
+        className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3"
       >
         {/* Menu expandido */}
         {isOpen && (
