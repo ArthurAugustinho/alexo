@@ -5,13 +5,14 @@ import {
   CalendarRangeIcon,
   ExternalLinkIcon,
   ImageIcon,
+  Loader2Icon,
   PencilLineIcon,
   PlusIcon,
   Trash2Icon,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -53,7 +54,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useUploadBrandLogo } from "@/hooks/mutations/use-upload-brand-logo";
 import {
   createAdminBanner,
   deleteAdminBanner,
@@ -120,6 +123,8 @@ function BannerEditorDialog({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { upload, isUploading, error: uploadError } = useUploadBrandLogo();
 
   const defaultValues = useMemo<AdminBannerFormValues>(
     () => ({
@@ -142,6 +147,35 @@ function BannerEditorDialog({
   useEffect(() => {
     form.reset(defaultValues);
   }, [defaultValues, form]);
+
+  const watchedImageUrl = form.watch("imageUrl");
+
+  const ACCEPTED_MIME_TYPES = ["image/svg+xml", "image/png", "image/jpeg"];
+  const MAX_SIZE = 2 * 1024 * 1024;
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      toast.error("Formato inválido. Use SVG, PNG ou JPG.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_SIZE) {
+      toast.error("Arquivo muito grande. Máximo 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const url = await upload(file);
+    if (url) {
+      form.setValue("imageUrl", url, { shouldValidate: true });
+    } else {
+      toast.error(uploadError ?? "Falha no upload.");
+    }
+  }
 
   function onSubmit(values: AdminBannerInput) {
     startTransition(async () => {
@@ -235,14 +269,76 @@ function BannerEditorDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Imagem</FormLabel>
-                  <FormControl>
-                    <Input
-                      className="rounded-xl"
-                      placeholder="https://..."
-                      {...field}
-                    />
-                  </FormControl>
+
+                  <Tabs defaultValue="upload">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="upload" className="flex-1">
+                        Upload de arquivo
+                      </TabsTrigger>
+                      <TabsTrigger value="url" className="flex-1">
+                        URL externa
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="upload" className="mt-3 space-y-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".svg,.png,.jpg,.jpeg"
+                        className="hidden"
+                        onChange={handleFileChange}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-xl"
+                        disabled={isUploading}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2Icon className="size-4 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          "Selecionar imagem (SVG, PNG, JPG — máx. 2MB)"
+                        )}
+                      </Button>
+                      {uploadError && (
+                        <p className="text-destructive text-sm">{uploadError}</p>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="url" className="mt-3">
+                      <Input
+                        className="rounded-xl"
+                        placeholder="https://..."
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    </TabsContent>
+                  </Tabs>
+
                   <FormMessage />
+
+                  <div className="relative aspect-video w-full overflow-hidden rounded-2xl border bg-muted/30">
+                    {watchedImageUrl ? (
+                      <div
+                        className="h-full w-full"
+                        style={{
+                          backgroundImage: `url(${watchedImageUrl})`,
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center">
+                        <ImageIcon className="text-muted-foreground size-8" />
+                      </div>
+                    )}
+                  </div>
                 </FormItem>
               )}
             />
@@ -304,7 +400,11 @@ function BannerEditorDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit" className="rounded-xl" disabled={isPending}>
+              <Button
+                type="submit"
+                className="rounded-xl"
+                disabled={isPending || isUploading}
+              >
                 {mode === "create" ? "Salvar banner" : "Salvar alterações"}
               </Button>
             </DialogFooter>
