@@ -1,4 +1,4 @@
-import { PackageIcon, Settings2Icon, StarIcon } from "lucide-react";
+import { PackageIcon, RotateCcwIcon, Settings2Icon, StarIcon } from "lucide-react";
 import Link from "next/link";
 
 import { AdminSignOutButton } from "@/components/admin/admin-sign-out-button";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getAdminRoleLabel } from "@/lib/admin-auth";
 import { type UserRole } from "@/lib/admin-roles";
+import { getPendingReturnRequestsCount } from "@/lib/queries/return-requests";
 
 type AdminShellProps = {
   children: React.ReactNode;
@@ -23,7 +24,9 @@ function getInitials(name: string) {
   return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase();
 }
 
-export function AdminShell({ children, user, role }: AdminShellProps) {
+export async function AdminShell({ children, user, role }: AdminShellProps) {
+  const pendingReturns = await getPendingReturnRequestsCount();
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(155,92,255,0.14),_transparent_32%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(246,243,255,0.92))]">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
@@ -68,6 +71,17 @@ export function AdminShell({ children, user, role }: AdminShellProps) {
                   <Link href="/admin/pedidos">
                     <PackageIcon />
                     Pedidos
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="relative">
+                  <Link href="/admin/devolucoes">
+                    <RotateCcwIcon />
+                    Devoluções
+                    {pendingReturns > 0 && (
+                      <span className="bg-destructive text-destructive-foreground absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full text-[10px] font-bold">
+                        {pendingReturns}
+                      </span>
+                    )}
                   </Link>
                 </Button>
                 <Button asChild variant="outline">

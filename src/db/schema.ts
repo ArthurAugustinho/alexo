@@ -58,6 +58,7 @@ export const userRelations = relations(userTable, ({ many, one }) => ({
   orders: many(orderTable),
   wishlistItems: many(wishlistItemTable),
   reviews: many(productReviewTable),
+  returnRequests: many(returnRequestTable),
 }));
 
 export const sessionTable = pgTable("session", {
@@ -386,6 +387,21 @@ export const cartItemRelations = relations(cartItemTable, ({ one }) => ({
   }),
 }));
 
+export const returnReasonEnum = pgEnum("return_reason", [
+  "defect",
+  "wrong_item",
+  "damaged",
+  "wrong_size",
+  "other",
+]);
+
+export const returnRequestStatusEnum = pgEnum("return_request_status", [
+  "pending_review",
+  "approved",
+  "rejected",
+  "completed",
+]);
+
 export const orderStatus = pgEnum("order_status", [
   "pending",
   "paid",
@@ -438,6 +454,10 @@ export const orderRelations = relations(orderTable, ({ one, many }) => ({
     references: [shippingAddressTable.id],
   }),
   items: many(orderItemTable),
+  returnRequest: one(returnRequestTable, {
+    fields: [orderTable.id],
+    references: [returnRequestTable.orderId],
+  }),
 }));
 
 export const orderItemTable = pgTable("order_item", {
@@ -675,3 +695,51 @@ export const logisticsConfigTable = pgTable("logistics_config", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+export const returnRequestTable = pgTable(
+  "return_requests",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orderTable.id, { onDelete: "cascade" })
+      .unique(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    reason: returnReasonEnum("reason").notNull(),
+    description: text("description").notNull(),
+    photoUrl: varchar("photo_url", { length: 500 }),
+    status: returnRequestStatusEnum("status")
+      .notNull()
+      .default("pending_review"),
+    adminNote: text("admin_note"),
+    returnCode: varchar("return_code", { length: 100 }),
+    returnUrl: varchar("return_url", { length: 500 }),
+    reviewedAt: timestamp("reviewed_at"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("return_requests_user_status_idx").on(table.userId, table.status),
+    index("return_requests_status_created_idx").on(
+      table.status,
+      table.createdAt,
+    ),
+  ],
+);
+
+export const returnRequestRelations = relations(
+  returnRequestTable,
+  ({ one }) => ({
+    order: one(orderTable, {
+      fields: [returnRequestTable.orderId],
+      references: [orderTable.id],
+    }),
+    user: one(userTable, {
+      fields: [returnRequestTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
