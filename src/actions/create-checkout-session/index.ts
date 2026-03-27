@@ -66,5 +66,18 @@ export const createCheckoutSession = async (
       };
     }),
   });
+
+  const paymentIntentId =
+    typeof checkoutSession.payment_intent === "string"
+      ? checkoutSession.payment_intent
+      : (checkoutSession.payment_intent?.id ?? null);
+
+  if (paymentIntentId) {
+    await db
+      .update(orderTable)
+      .set({ stripePaymentIntentId: paymentIntentId })
+      .where(eq(orderTable.id, orderId));
+  }
+
   return { id: checkoutSession.id };
 };

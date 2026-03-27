@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { HeartIcon, LogInIcon, LogOutIcon, MenuIcon, UserCircleIcon } from "lucide-react";
+import { HeartIcon, LogInIcon, LogOutIcon, MenuIcon, PackageIcon, UserCircleIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { useOrders } from "@/hooks/queries/use-orders";
 import { useProfile } from "@/hooks/queries/use-profile";
 import { getWishlistProductIdsForCurrentUser } from "@/lib/actions/wishlist";
 import { authClient } from "@/lib/auth-client";
@@ -22,6 +23,7 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import { Cart } from "./cart";
+import { OrdersSheet } from "./orders-sheet";
 import { ProfileSheet } from "./profile-sheet";
 import { SearchBar } from "./search-bar";
 import { SearchModal } from "./search-modal";
@@ -31,6 +33,7 @@ export const Header = () => {
   const { data: session } = authClient.useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   const { data: wishlistProductIds = [] } = useQuery({
     queryKey: ["wishlist-product-ids", session?.user?.id],
     queryFn: () => getWishlistProductIdsForCurrentUser(),
@@ -38,6 +41,10 @@ export const Header = () => {
     staleTime: 30_000,
   });
   const { data: profile } = useProfile(session?.user?.id);
+  const { data: orders = [] } = useOrders(session?.user?.id);
+  const activeOrdersCount = orders.filter((o) =>
+    ["pending", "paid", "shipped"].includes(o.status),
+  ).length;
   const isProfileIncomplete =
     !!session?.user?.id &&
     (!profile?.phone || !profile?.birthDate || !profile?.gender || !profile?.cpf);
@@ -50,6 +57,11 @@ export const Header = () => {
   function handleOpenProfile() {
     setIsMenuOpen(false);
     setIsProfileOpen(true);
+  }
+
+  function handleOpenOrders() {
+    setIsMenuOpen(false);
+    setIsOrdersOpen(true);
   }
 
   return (
@@ -122,6 +134,24 @@ export const Header = () => {
 
                   <button
                     type="button"
+                    onClick={handleOpenOrders}
+                    className="hover:bg-muted mt-3 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="bg-muted flex size-9 items-center justify-center rounded-full">
+                        <PackageIcon className="size-4" />
+                      </span>
+                      <span className="text-sm font-medium">Meus pedidos</span>
+                    </span>
+                    {activeOrdersCount > 0 && (
+                      <Badge variant="secondary" className="rounded-full px-2.5 py-1">
+                        {activeOrdersCount}
+                      </Badge>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleGoToWishlist}
                     className="hover:bg-muted mt-3 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
                   >
@@ -161,6 +191,14 @@ export const Header = () => {
         <ProfileSheet
           open={isProfileOpen}
           onOpenChange={setIsProfileOpen}
+          userId={session.user.id}
+        />
+      )}
+
+      {session?.user?.id && (
+        <OrdersSheet
+          open={isOrdersOpen}
+          onOpenChange={setIsOrdersOpen}
           userId={session.user.id}
         />
       )}

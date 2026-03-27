@@ -389,7 +389,10 @@ export const cartItemRelations = relations(cartItemTable, ({ one }) => ({
 export const orderStatus = pgEnum("order_status", [
   "pending",
   "paid",
+  "shipped",
+  "delivered",
   "canceled",
+  "refunded",
 ]);
 
 export const orderTable = pgTable("order", {
@@ -414,6 +417,14 @@ export const orderTable = pgTable("order", {
   cpfOrCnpj: text().notNull(),
   totalPriceInCents: integer("total_price_in_cents").notNull(),
   status: orderStatus().notNull().default("pending"),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  trackingCode: varchar("tracking_code", { length: 100 }),
+  trackingUrl: varchar("tracking_url", { length: 500 }),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
+  refundedAt: timestamp("refunded_at"),
+  canceledAt: timestamp("canceled_at"),
+  statusNote: varchar("status_note", { length: 500 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
