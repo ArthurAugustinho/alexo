@@ -30,7 +30,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
@@ -40,10 +40,18 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# docker
+.env.production
+
+# drizzle
+drizzle/meta
+
 # user uploads
 /public/uploads/brands/*
 !/public/uploads/brands/.gitkeep
 /public/uploads/avatars/*
 !/public/uploads/avatars/.gitkeep
+/public/uploads/reviews/*
+!/public/uploads/reviews/.gitkeep
 /public/uploads/returns/*
 !/public/uploads/returns/.gitkeep
