@@ -6,7 +6,13 @@ import { Header } from "@/components/common/header";
 import ProductDetailsClient from "@/components/product/product-details-client";
 import { RelatedProducts } from "@/components/product/related-products";
 import { auth } from "@/lib/auth";
+import { getLogisticsConfig } from "@/lib/queries/logistics";
 import { getProductBySlug } from "@/lib/queries/products";
+import {
+  getApprovedReviewsByProduct,
+  getReviewStats,
+  getUserReviewForProduct,
+} from "@/lib/queries/reviews";
 import { getSizeChartByCategory } from "@/lib/queries/size-charts";
 import { isProductInWishlist } from "@/lib/queries/wishlist";
 
@@ -87,12 +93,19 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     return notFound();
   }
 
-  const [isWishlisted, sizeChartData] = await Promise.all([
-    session?.user.id
-      ? isProductInWishlist(session.user.id, product.id)
-      : Promise.resolve(false),
-    getSizeChartByCategory(product.categoryId),
-  ]);
+  const [isWishlisted, sizeChartData, reviews, reviewStats, logisticsConfig, hasAlreadyReviewed] =
+    await Promise.all([
+      session?.user.id
+        ? isProductInWishlist(session.user.id, product.id)
+        : Promise.resolve(false),
+      getSizeChartByCategory(product.categoryId),
+      getApprovedReviewsByProduct(product.id),
+      getReviewStats(product.id),
+      getLogisticsConfig(),
+      session?.user.id
+        ? getUserReviewForProduct(session.user.id, product.id)
+        : Promise.resolve(null),
+    ]);
 
   return (
     <>
@@ -106,11 +119,17 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
           productDescription={product.description}
           productName={product.name}
           productBrand={product.brand}
+          isVerified={product.isVerified}
           videoUrl={product.videoUrl}
           sizeChart={sizeChartData?.entries ?? []}
           sizeType={product.sizeType}
           productSizes={product.productSizes}
           variants={product.variants}
+          reviews={reviews}
+          reviewStats={reviewStats}
+          isLoggedIn={Boolean(session?.user.id)}
+          hasAlreadyReviewed={Boolean(hasAlreadyReviewed)}
+          logisticsConfig={logisticsConfig}
         />
 
         <RelatedProducts

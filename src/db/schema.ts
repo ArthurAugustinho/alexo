@@ -50,6 +50,7 @@ export const userRelations = relations(userTable, ({ many, one }) => ({
   }),
   orders: many(orderTable),
   wishlistItems: many(wishlistItemTable),
+  reviews: many(productReviewTable),
 }));
 
 export const sessionTable = pgTable("session", {
@@ -130,6 +131,7 @@ export const productTable = pgTable("product", {
   description: text().notNull(),
   brand: varchar("brand", { length: 100 }),
   videoUrl: varchar("video_url", { length: 500 }),
+  isVerified: boolean("is_verified").notNull().default(false),
   originPostalCode: varchar("origin_postal_code", { length: 8 }),
   sizeType: sizeTypeEnum("size_type").notNull().default("alphabetic"),
   shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
@@ -149,6 +151,7 @@ export const productRelations = relations(productTable, ({ one, many }) => ({
   productSizes: many(productSizeTable),
   variants: many(productVariantTable),
   wishlistItems: many(wishlistItemTable),
+  reviews: many(productReviewTable),
 }));
 
 export const productSizeTable = pgTable("product_size", {
@@ -580,3 +583,77 @@ export const trustBadgeTable = pgTable(
     ),
   ],
 );
+
+export const productReviewTable = pgTable(
+  "product_review",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => productTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    title: varchar("title", { length: 150 }),
+    body: text("body"),
+    photoUrls: text("photo_urls")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    isApproved: boolean("is_approved").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "product_review_rating_range",
+      sql`${table.rating} >= 1 AND ${table.rating} <= 5`,
+    ),
+    index("product_review_product_id_idx").on(table.productId),
+    uniqueIndex("product_review_user_product_unique").on(
+      table.userId,
+      table.productId,
+    ),
+  ],
+);
+
+export const productReviewRelations = relations(
+  productReviewTable,
+  ({ one }) => ({
+    product: one(productTable, {
+      fields: [productReviewTable.productId],
+      references: [productTable.id],
+    }),
+    user: one(userTable, {
+      fields: [productReviewTable.userId],
+      references: [userTable.id],
+    }),
+  }),
+);
+
+export const logisticsConfigTable = pgTable("logistics_config", {
+  id: uuid().primaryKey().defaultRandom(),
+  maxInstallments: integer("max_installments").notNull().default(12),
+  minInstallmentValueInCents: integer("min_installment_value_in_cents")
+    .notNull()
+    .default(2000),
+  freeInstallmentsUpTo: integer("free_installments_up_to").notNull().default(1),
+  interestRatePercent: numeric("interest_rate_percent", {
+    precision: 5,
+    scale: 2,
+    mode: "number",
+  })
+    .notNull()
+    .default(0),
+  returnPolicyDays: integer("return_policy_days").notNull().default(30),
+  exchangePolicyText: text("exchange_policy_text"),
+  returnPolicyText: text("return_policy_text"),
+  paymentMethods: text("payment_methods")
+    .array()
+    .notNull()
+    .default(
+      sql`ARRAY['visa','mastercard','pix','boleto','elo','amex']::text[]`,
+    ),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});

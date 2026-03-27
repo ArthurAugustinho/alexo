@@ -1,4 +1,4 @@
-import { Settings2Icon } from "lucide-react";
+import { Settings2Icon, StarIcon } from "lucide-react";
 import Link from "next/link";
 
 import { AdminSignOutButton } from "@/components/admin/admin-sign-out-button";
@@ -64,6 +64,12 @@ export function AdminShell({ children, user, role }: AdminShellProps) {
                     <Link href="/admin/vitrine/banners">Vitrine</Link>
                   </Button>
                 ) : null}
+                <Button asChild variant="outline">
+                  <Link href="/admin/avaliacoes">
+                    <StarIcon />
+                    Avaliações
+                  </Link>
+                </Button>
                 <Button asChild variant="outline">
                   <Link href="/admin/configuracoes/footer">
                     <Settings2Icon />

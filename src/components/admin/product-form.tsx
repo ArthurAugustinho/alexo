@@ -35,6 +35,7 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 
 type ProductFormCategory = {
@@ -55,6 +56,7 @@ type ProductFormProduct = {
   name: string;
   brand: string | null;
   videoUrl: string | null;
+  isVerified: boolean;
   originPostalCode: string | null;
   description: string;
   categoryId: string;
@@ -209,6 +211,7 @@ export function ProductForm({
       lengthCm: product?.lengthCm ?? null,
       imageUrl: product?.primaryVariant?.imageUrl ?? "",
       videoUrl: product?.videoUrl ?? "",
+      isVerified: product?.isVerified ?? false,
       sizeType: product?.sizeType ?? "alphabetic",
       productSizes: product?.productSizes.map((size) => size.sizeValue) ?? [],
       variantStocks: variantStockGrid,
@@ -967,6 +970,29 @@ export function ProductForm({
                 />
               </FormControl>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="isVerified"
+          render={({ field }) => (
+            <FormItem className="border-border/60 flex items-center justify-between rounded-xl border px-4 py-3">
+              <div>
+                <FormLabel className="text-sm font-medium">
+                  Fornecedor verificado
+                </FormLabel>
+                <p className="text-muted-foreground text-xs">
+                  Exibe o selo de verificação na página do produto
+                </p>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
             </FormItem>
           )}
         />

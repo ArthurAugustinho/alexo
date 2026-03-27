@@ -10,13 +10,18 @@ import {
   type ProductSizeType,
   type ProductVariantModel,
 } from "@/lib/product-variant-schema";
+import type { LogisticsConfig } from "@/lib/queries/logistics";
+import type { ReviewStats, ReviewWithUser } from "@/lib/queries/reviews";
 import type { SizeChartRange } from "@/lib/size-chart-schema";
 
 import { ShippingCalculator } from "../shipping/shipping-calculator";
+import { LogisticsBlock } from "./logistics-block";
 import ProductActions from "./product-actions";
 import { ProductGallery } from "./product-gallery";
+import { ReviewSection } from "./review-section";
 import { SizeRecommenderModal } from "./size-recommender-modal";
 import VariantSelector from "./variant-selector";
+import { VerifiedBadge } from "./verified-badge";
 import { WishlistButton } from "./wishlist-button";
 
 type ProductDetailsClientProps = {
@@ -27,11 +32,17 @@ type ProductDetailsClientProps = {
   productDescription: string;
   productName: string;
   productBrand?: string | null;
+  isVerified: boolean;
   videoUrl?: string | null;
   sizeChart: SizeChartRange[];
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
   variants: ProductVariantModel[];
+  reviews: ReviewWithUser[];
+  reviewStats: ReviewStats;
+  isLoggedIn: boolean;
+  hasAlreadyReviewed: boolean;
+  logisticsConfig: LogisticsConfig | null;
 };
 
 const ProductDetailsClient = ({
@@ -42,11 +53,17 @@ const ProductDetailsClient = ({
   productDescription,
   productName,
   productBrand,
+  isVerified,
   videoUrl,
   sizeChart,
   sizeType,
   productSizes,
   variants,
+  reviews,
+  reviewStats,
+  isLoggedIn,
+  hasAlreadyReviewed,
+  logisticsConfig,
 }: ProductDetailsClientProps) => {
   const {
     allSizesForColor,
@@ -95,11 +112,12 @@ const ProductDetailsClient = ({
       {/* Info panel */}
       <div className="mt-6 space-y-5 px-5 lg:mt-0 lg:px-0">
         {/* Name & brand */}
-        <div>
+        <div className="space-y-1">
           <h1 className="text-xl font-semibold">{productName}</h1>
           {productBrand && (
-            <p className="text-muted-foreground mt-0.5 text-sm">{productBrand}</p>
+            <p className="text-muted-foreground text-sm">{productBrand}</p>
           )}
+          <VerifiedBadge isVerified={isVerified} />
         </div>
 
         {/* Price + Wishlist */}
@@ -156,6 +174,25 @@ const ProductDetailsClient = ({
 
         {/* Shipping calculator */}
         <ShippingCalculator productId={productId} quantity={1} />
+
+        {/* Logistics block */}
+        {logisticsConfig && (
+          <LogisticsBlock
+            config={logisticsConfig}
+            priceInCents={displayedPriceInCents}
+          />
+        )}
+      </div>
+
+      {/* Reviews — full width below the 2-column grid */}
+      <div className="col-span-full mt-8 border-t px-5 pt-8 lg:px-0">
+        <ReviewSection
+          productId={productId}
+          reviews={reviews}
+          stats={reviewStats}
+          isLoggedIn={isLoggedIn}
+          hasAlreadyReviewed={hasAlreadyReviewed}
+        />
       </div>
     </div>
   );

@@ -70,6 +70,7 @@ export type AdminCatalogProduct = {
   name: string;
   brand: string | null;
   videoUrl: string | null;
+  isVerified: boolean;
   originPostalCode: string | null;
   description: string;
   categoryId: string;

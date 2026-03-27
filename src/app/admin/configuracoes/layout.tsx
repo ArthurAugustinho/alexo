@@ -1,4 +1,4 @@
-import { LayoutTemplateIcon, MessageCircleIcon, Settings2Icon } from "lucide-react";
+import { LayoutTemplateIcon, MessageCircleIcon, Settings2Icon, TruckIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -47,8 +47,8 @@ export default async function AdminConfiguracoesLayout({
               <div className="space-y-1">
                 <h1 className="text-3xl font-semibold">Configurações da loja</h1>
                 <p className="text-muted-foreground max-w-2xl">
-                  Gerencie o conteúdo do footer, FAQ e redes sociais exibidos
-                  na loja.
+                  Gerencie o conteúdo do footer, FAQ, redes sociais e logística
+                  exibidos na loja.
                 </p>
               </div>
             </div>
@@ -64,6 +64,12 @@ export default async function AdminConfiguracoesLayout({
                 <Link href="/admin/configuracoes/atendimento">
                   <MessageCircleIcon />
                   Atendimento
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl">
+                <Link href="/admin/configuracoes/logistica">
+                  <TruckIcon />
+                  Logística
                 </Link>
               </Button>
               <Button asChild variant="ghost" className="rounded-xl">

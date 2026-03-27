@@ -41,6 +41,7 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
       name: product.name,
       brand: product.brand,
       videoUrl: product.videoUrl,
+      isVerified: product.isVerified,
       originPostalCode: product.originPostalCode,
       description: product.description,
       categoryId: category.id,

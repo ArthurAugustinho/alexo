@@ -92,6 +92,7 @@ export const adminProductSchema = z
       .url("Informe uma URL de vídeo válida.")
       .or(z.literal(""))
       .optional(),
+    isVerified: z.boolean().default(false),
     sizeType: productSizeTypeSchema,
     productSizes: z.array(productVariantSizeSchema).default([]),
     variantStocks: z.array(adminProductVariantStockSchema).default([]),
