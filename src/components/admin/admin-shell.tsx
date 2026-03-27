@@ -1,4 +1,4 @@
-import { PackageIcon, RotateCcwIcon, Settings2Icon, StarIcon, TagIcon } from "lucide-react";
+import { ExternalLinkIcon, PackageIcon, RotateCcwIcon, Settings2Icon, StarIcon, StoreIcon, TagIcon } from "lucide-react";
 import Link from "next/link";
 
 import { AdminSignOutButton } from "@/components/admin/admin-sign-out-button";
@@ -64,7 +64,10 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
               <div className="flex gap-2">
                 {role === "super_admin" ? (
                   <Button asChild variant="outline">
-                    <Link href="/admin/vitrine/banners">Vitrine</Link>
+                    <Link href="/admin/vitrine/banners">
+                      <StoreIcon />
+                      Vitrine
+                    </Link>
                   </Button>
                 ) : null}
                 <Button asChild variant="outline">
@@ -104,6 +107,7 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
                 </Button>
                 <Button asChild variant="ghost">
                   <Link href="/" target="_blank" rel="noopener noreferrer">
+                    <ExternalLinkIcon />
                     Ver loja
                   </Link>
                 </Button>
