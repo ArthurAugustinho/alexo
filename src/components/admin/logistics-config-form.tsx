@@ -54,6 +54,8 @@ export function LogisticsConfigForm({ config }: LogisticsConfigFormProps) {
       returnPolicyDays: config?.returnPolicyDays ?? 30,
       exchangePolicyText: config?.exchangePolicyText ?? "",
       returnPolicyText: config?.returnPolicyText ?? "",
+      successImageUrl: config?.successImageUrl ?? "",
+      cancelImageUrl: config?.cancelImageUrl ?? "",
       paymentMethods: (config?.paymentMethods ?? [
         "visa",
         "mastercard",
@@ -278,6 +280,51 @@ export function LogisticsConfigForm({ config }: LogisticsConfigFormProps) {
               </FormItem>
             )}
           />
+
+          {/* Checkout images */}
+          <fieldset className="border-border/60 space-y-4 rounded-2xl border p-4">
+            <legend className="px-1 text-sm font-medium">
+              Imagens do checkout
+            </legend>
+
+            <FormField
+              control={form.control}
+              name="successImageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Imagem de pagamento aprovado (URL)</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="rounded-xl"
+                      placeholder="https://..."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cancelImageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Imagem de pagamento não confirmado (URL)</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="rounded-xl"
+                      placeholder="https://..."
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </fieldset>
 
           <div className="flex justify-end">
             <Button type="submit" className="rounded-xl" disabled={isPending}>

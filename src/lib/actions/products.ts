@@ -195,6 +195,8 @@ export async function createAdminProduct(
         widthCm: payload.data.widthCm ?? null,
         heightCm: payload.data.heightCm ?? null,
         lengthCm: payload.data.lengthCm ?? null,
+        deliveryDaysMin: payload.data.deliveryDaysMin ?? null,
+        deliveryDaysMax: payload.data.deliveryDaysMax ?? null,
       })
       .returning();
 
@@ -326,6 +328,8 @@ export async function updateAdminProduct(
         widthCm: payload.data.widthCm ?? null,
         heightCm: payload.data.heightCm ?? null,
         lengthCm: payload.data.lengthCm ?? null,
+        deliveryDaysMin: payload.data.deliveryDaysMin ?? null,
+        deliveryDaysMax: payload.data.deliveryDaysMax ?? null,
       })
       .where(eq(productTable.id, existingProduct.id));
 

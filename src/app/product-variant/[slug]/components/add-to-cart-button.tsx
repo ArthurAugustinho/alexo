@@ -22,6 +22,7 @@ const AddToCartButton = ({
       addProductToCart({
         productVariantId,
         quantity,
+        shippingCostInCents: 0,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cart"] });

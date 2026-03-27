@@ -82,6 +82,8 @@ export type AdminCatalogProduct = {
   widthCm: number | null;
   heightCm: number | null;
   lengthCm: number | null;
+  deliveryDaysMin: number | null;
+  deliveryDaysMax: number | null;
   variantsCount: number;
   variants: Array<{
     id: string;

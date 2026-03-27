@@ -53,6 +53,8 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
       widthCm: product.widthCm,
       heightCm: product.heightCm,
       lengthCm: product.lengthCm,
+      deliveryDaysMin: product.deliveryDaysMin,
+      deliveryDaysMax: product.deliveryDaysMax,
       variantsCount: product.variants.length,
       variants: product.variants.map((variant) => ({
         id: variant.id,

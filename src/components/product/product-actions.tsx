@@ -8,16 +8,19 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { addProductToCart } from "@/lib/actions/cart";
 import { type ProductVariantModel } from "@/lib/product-variant-schema";
+import { type ShippingOption } from "@/lib/shipping-schema";
 import { cn } from "@/lib/utils";
 
 type ProductActionsProps = {
   isSelectionComplete: boolean;
   selectedVariant: ProductVariantModel | null;
+  selectedShipping: ShippingOption | null;
 };
 
 const ProductActions = ({
   isSelectionComplete,
   selectedVariant,
+  selectedShipping,
 }: ProductActionsProps) => {
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState(1);
@@ -28,10 +31,15 @@ const ProductActions = ({
       if (!selectedVariant || selectedVariant.stock <= 0) {
         throw new Error("Selecione um tamanho disponivel para continuar");
       }
-
+      if (!selectedShipping) {
+        throw new Error("Selecione uma opcao de frete para continuar");
+      }
       return addProductToCart({
         productVariantId: selectedVariant.id,
         quantity,
+        shippingCostInCents: selectedShipping.priceInCents,
+        shippingServiceName: selectedShipping.name,
+        shippingDays: selectedShipping.deliveryTime,
       });
     },
     onSuccess: () => {
@@ -50,7 +58,7 @@ const ProductActions = ({
     },
   });
 
-  const canAddToCart = isSelectionComplete;
+  const canAddToCart = isSelectionComplete && !!selectedShipping;
 
   useEffect(() => {
     if (isSelectionComplete) {
@@ -62,12 +70,15 @@ const ProductActions = ({
     if (!isSelectionComplete || (selectedVariant?.stock ?? 0) <= 0) {
       const message = "Selecione um tamanho disponivel para continuar";
       setInlineError(message);
-      toast.warning(message, {
-        duration: 3000,
-      });
+      toast.warning(message, { duration: 3000 });
       return;
     }
-
+    if (!selectedShipping) {
+      const message = "Calcule e selecione o frete antes de adicionar ao carrinho";
+      setInlineError(message);
+      toast.warning(message, { duration: 3000 });
+      return;
+    }
     setInlineError(null);
     mutate();
   }

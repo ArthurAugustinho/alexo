@@ -65,6 +65,8 @@ type ProductFormProduct = {
   widthCm: number | null;
   heightCm: number | null;
   lengthCm: number | null;
+  deliveryDaysMin: number | null;
+  deliveryDaysMax: number | null;
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
   variants: ProductFormVariant[];
@@ -209,6 +211,8 @@ export function ProductForm({
       widthCm: product?.widthCm ?? null,
       heightCm: product?.heightCm ?? null,
       lengthCm: product?.lengthCm ?? null,
+      deliveryDaysMin: product?.deliveryDaysMin ?? null,
+      deliveryDaysMax: product?.deliveryDaysMax ?? null,
       imageUrl: product?.primaryVariant?.imageUrl ?? "",
       videoUrl: product?.videoUrl ?? "",
       isVerified: product?.isVerified ?? false,
@@ -918,6 +922,72 @@ export function ProductForm({
                     min="1"
                     step="1"
                     className="rounded-xl"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    disabled={field.disabled}
+                    value={typeof field.value === "number" ? field.value : ""}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="deliveryDaysMin"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Prazo mínimo (dias úteis)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    className="rounded-xl"
+                    placeholder="Ex: 3"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    disabled={field.disabled}
+                    value={typeof field.value === "number" ? field.value : ""}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value === ""
+                          ? null
+                          : Number(event.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="deliveryDaysMax"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Prazo máximo (dias úteis)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    className="rounded-xl"
+                    placeholder="Ex: 7"
                     name={field.name}
                     ref={field.ref}
                     onBlur={field.onBlur}

@@ -1,4 +1,5 @@
 import { Header } from "@/components/common/header";
+import { getLogisticsConfig } from "@/lib/queries/logistics";
 
 import { CheckoutCancelDialog } from "./components/checkout-cancel-dialog";
 
@@ -11,12 +12,18 @@ type CheckoutCancelPageProps = {
 const CheckoutCancelPage = async ({
   searchParams,
 }: CheckoutCancelPageProps) => {
-  const { orderId } = await searchParams;
+  const [{ orderId }, logisticsConfig] = await Promise.all([
+    searchParams,
+    getLogisticsConfig(),
+  ]);
 
   return (
     <>
       <Header />
-      <CheckoutCancelDialog orderId={orderId} />
+      <CheckoutCancelDialog
+        orderId={orderId}
+        imageUrl={logisticsConfig?.cancelImageUrl}
+      />
     </>
   );
 };

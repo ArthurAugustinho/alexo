@@ -111,7 +111,7 @@ export const finishOrder = async (input: {
 
 export const createCheckoutSession = async (data: {
   orderId: string;
-}): Promise<ActionResult & { sessionId?: string }> => {
+}): Promise<ActionResult & { sessionUrl?: string }> => {
   if (!process.env.STRIPE_SECRET_KEY)
     return {
       success: false,
@@ -160,9 +160,15 @@ export const createCheckoutSession = async (data: {
     })),
   });
 
+  if (!checkoutSession.url)
+    return {
+      success: false,
+      message: "URL de pagamento não gerada pelo provedor.",
+    };
+
   return {
     success: true,
     message: "Sessão de pagamento criada.",
-    sessionId: checkoutSession.id,
+    sessionUrl: checkoutSession.url,
   };
 };

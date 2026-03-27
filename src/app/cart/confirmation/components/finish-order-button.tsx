@@ -1,6 +1,5 @@
 "use client";
 
-import { loadStripe } from "@stripe/stripe-js";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -29,35 +28,17 @@ const FinishOrderButton = ({ shippingCostInCents, shippingNotSelected }: Props) 
   const handleFinishOrder = async () => {
     setErrorDialogIsOpen(false);
     try {
-      if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-        throw new Error("Stripe publishable key is not set");
-      }
-
       const { orderId } = await finishOrderMutation.mutateAsync(shippingCostInCents);
 
       const sessionResult = await createCheckoutSession({ orderId });
-      if (!sessionResult.success || !sessionResult.sessionId) {
+      if (!sessionResult.success || !sessionResult.sessionUrl) {
         throw new Error(
           sessionResult.message ?? "Não foi possível iniciar o pagamento.",
         );
       }
 
-      const stripe = await loadStripe(
-        process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-      );
-      if (!stripe) {
-        throw new Error("Provedor de pagamento indisponível.");
-      }
-
       setIsRedirecting(true);
-
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: sessionResult.sessionId,
-      });
-
-      if (error) {
-        throw new Error(error.message);
-      }
+      window.location.href = sessionResult.sessionUrl;
     } catch (err) {
       console.error(err);
       setIsRedirecting(false);

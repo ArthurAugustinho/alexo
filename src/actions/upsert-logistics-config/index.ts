@@ -36,6 +36,8 @@ export async function upsertLogisticsConfig(
     returnPolicyDays: payload.data.returnPolicyDays,
     exchangePolicyText: payload.data.exchangePolicyText ?? null,
     returnPolicyText: payload.data.returnPolicyText ?? null,
+    successImageUrl: payload.data.successImageUrl || null,
+    cancelImageUrl: payload.data.cancelImageUrl || null,
     paymentMethods: payload.data.paymentMethods,
     updatedAt: new Date(),
   };

@@ -25,6 +25,7 @@ interface CartSummaryProps {
   appliedCouponCode?: string | null;
   discountInCents?: number;
   onShippingChange?: (option: ShippingOption | null) => void;
+  showShipping?: boolean;
 }
 
 const formatCurrency = (valueInCents: number) =>
@@ -40,6 +41,7 @@ const CartSummary = ({
   appliedCouponCode = null,
   discountInCents = 0,
   onShippingChange,
+  showShipping = true,
 }: CartSummaryProps) => {
   const [selectedShippingOption, setSelectedShippingOption] =
     useState<ShippingOption | null>(null);
@@ -60,17 +62,20 @@ const CartSummary = ({
         <CardTitle>Seu pedido</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <ShippingCalculator
-          items={products.map((product) => ({
-            productId: product.productId,
-            quantity: product.quantity,
-          }))}
-          note="* Valor estimado. O frete sera confirmado no checkout."
-          selectedOptionId={selectedShippingOption?.id ?? null}
-          onOptionSelect={handleShippingSelect}
-        />
-
-        <Separator />
+        {showShipping && (
+          <>
+            <ShippingCalculator
+              items={products.map((product) => ({
+                productId: product.productId,
+                quantity: product.quantity,
+              }))}
+              note="* Valor estimado. O frete sera confirmado no checkout."
+              selectedOptionId={selectedShippingOption?.id ?? null}
+              onOptionSelect={handleShippingSelect}
+            />
+            <Separator />
+          </>
+        )}
 
         <CouponInput
           appliedCouponCode={appliedCouponCode}
@@ -94,34 +99,38 @@ const CartSummary = ({
               </span>
             </div>
           )}
-          <div className="flex items-center justify-between">
-            <span>Transporte e Manuseio</span>
-            <span
-              className={
-                shippingInCents === 0
-                  ? "text-muted-foreground"
-                  : "font-medium"
-              }
-            >
-              {selectedShippingOption
-                ? shippingInCents === 0
-                  ? "Gratis"
-                  : formatCurrency(shippingInCents)
-                : "Calcule o frete"}
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>Prazo estimado</span>
-            <span className="text-muted-foreground">
-              {selectedShippingOption
-                ? `Ate ${selectedShippingOption.deliveryTime} ${
-                    selectedShippingOption.deliveryTime === 1
-                      ? "dia util"
-                      : "dias uteis"
-                  }`
-                : "—"}
-            </span>
-          </div>
+          {showShipping && (
+            <>
+              <div className="flex items-center justify-between">
+                <span>Transporte e Manuseio</span>
+                <span
+                  className={
+                    shippingInCents === 0
+                      ? "text-muted-foreground"
+                      : "font-medium"
+                  }
+                >
+                  {selectedShippingOption
+                    ? shippingInCents === 0
+                      ? "Gratis"
+                      : formatCurrency(shippingInCents)
+                    : "Calcule o frete"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Prazo estimado</span>
+                <span className="text-muted-foreground">
+                  {selectedShippingOption
+                    ? `Ate ${selectedShippingOption.deliveryTime} ${
+                        selectedShippingOption.deliveryTime === 1
+                          ? "dia util"
+                          : "dias uteis"
+                      }`
+                    : "—"}
+                </span>
+              </div>
+            </>
+          )}
           <div className="flex items-center justify-between text-base font-semibold">
             <span>Total</span>
             <span>{formatCurrency(totalInCents)}</span>

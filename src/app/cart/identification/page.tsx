@@ -58,6 +58,7 @@ const IdentificationPage = async () => {
         />
         <CartSummary
           subtotalInCents={cartTotalInCents}
+          showShipping={false}
           products={cart.items.map((item) => ({
             id: item.productVariant.id,
             productId: item.productVariant.product.id,

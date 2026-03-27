@@ -130,6 +130,8 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
           isLoggedIn={Boolean(session?.user.id)}
           hasAlreadyReviewed={Boolean(hasAlreadyReviewed)}
           logisticsConfig={logisticsConfig}
+          deliveryDaysMin={product.deliveryDaysMin}
+          deliveryDaysMax={product.deliveryDaysMax}
         />
 
         <RelatedProducts

@@ -15,16 +15,17 @@ import {
 
 type CheckoutCancelDialogProps = {
   orderId?: string;
+  imageUrl?: string | null;
 };
 
-export function CheckoutCancelDialog({ orderId }: CheckoutCancelDialogProps) {
+export function CheckoutCancelDialog({ orderId, imageUrl }: CheckoutCancelDialogProps) {
   const [open, setOpen] = useState(true);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="text-center">
         <Image
-          src="/illustration.svg"
+          src={imageUrl || "/illustration.svg"}
           alt="Pagamento não confirmado"
           width={300}
           height={300}

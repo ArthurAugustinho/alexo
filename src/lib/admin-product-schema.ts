@@ -86,6 +86,8 @@ export const adminProductSchema = z
     widthCm: optionalPositiveIntegerSchema,
     heightCm: optionalPositiveIntegerSchema,
     lengthCm: optionalPositiveIntegerSchema,
+    deliveryDaysMin: optionalPositiveIntegerSchema,
+    deliveryDaysMax: optionalPositiveIntegerSchema,
     imageUrl: z.url("Informe uma URL de imagem valida."),
     videoUrl: z
       .string()

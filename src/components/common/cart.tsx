@@ -25,6 +25,13 @@ type CartProps = {
 export const Cart = ({ isAuthenticated }: CartProps) => {
   const { data: cart } = useCart({ enabled: isAuthenticated });
 
+  const totalShippingInCents = (cart?.items ?? []).reduce(
+    (acc, item) => acc + (item.shippingCostInCents ?? 0),
+    0,
+  );
+  const totalWithShippingInCents =
+    (cart?.totalPriceInCents ?? 0) + totalShippingInCents;
+
   return (
     <Sheet>
       <SheetTrigger asChild>
@@ -63,6 +70,8 @@ export const Cart = ({ isAuthenticated }: CartProps) => {
                         item.productVariant.priceInCents
                       }
                       quantity={item.quantity}
+                      shippingCostInCents={item.shippingCostInCents ?? 0}
+                      shippingServiceName={item.shippingServiceName}
                     />
                   ))
                 ) : (
@@ -89,14 +98,18 @@ export const Cart = ({ isAuthenticated }: CartProps) => {
 
               <div className="flex items-center justify-between text-xs font-medium">
                 <p>Entrega</p>
-                <p>GRÁTIS</p>
+                <p>
+                  {totalShippingInCents === 0
+                    ? "GRÁTIS"
+                    : formatCentsToBRL(totalShippingInCents)}
+                </p>
               </div>
 
               <Separator />
 
               <div className="flex items-center justify-between text-xs font-medium">
                 <p>Total</p>
-                <p>{formatCentsToBRL(cart?.totalPriceInCents ?? 0)}</p>
+                <p>{formatCentsToBRL(totalWithShippingInCents)}</p>
               </div>
 
               <Button className="mt-5 rounded-full" asChild>

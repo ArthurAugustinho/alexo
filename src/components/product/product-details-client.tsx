@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { formatCentsToBRL } from "@/helpers/money";
 import { useVariantSelector } from "@/hooks/use-variant-selector";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/product-variant-schema";
 import type { LogisticsConfig } from "@/lib/queries/logistics";
 import type { ReviewStats, ReviewWithUser } from "@/lib/queries/reviews";
+import { type ShippingOption } from "@/lib/shipping-schema";
 import type { SizeChartRange } from "@/lib/size-chart-schema";
 
 import { ShippingCalculator } from "../shipping/shipping-calculator";
@@ -43,6 +44,8 @@ type ProductDetailsClientProps = {
   isLoggedIn: boolean;
   hasAlreadyReviewed: boolean;
   logisticsConfig: LogisticsConfig | null;
+  deliveryDaysMin?: number | null;
+  deliveryDaysMax?: number | null;
 };
 
 const ProductDetailsClient = ({
@@ -64,7 +67,12 @@ const ProductDetailsClient = ({
   isLoggedIn,
   hasAlreadyReviewed,
   logisticsConfig,
+  deliveryDaysMin,
+  deliveryDaysMax,
 }: ProductDetailsClientProps) => {
+  const [selectedShipping, setSelectedShipping] =
+    useState<ShippingOption | null>(null);
+
   const {
     allSizesForColor,
     colorOptions,
@@ -163,6 +171,7 @@ const ProductDetailsClient = ({
         <ProductActions
           isSelectionComplete={isSelectionComplete}
           selectedVariant={selectedVariant}
+          selectedShipping={selectedShipping}
         />
 
         {/* Description */}
@@ -172,8 +181,24 @@ const ProductDetailsClient = ({
           </p>
         </div>
 
+        {/* Delivery time */}
+        {(deliveryDaysMin != null || deliveryDaysMax != null) && (
+          <p className="text-muted-foreground text-sm">
+            {deliveryDaysMin != null && deliveryDaysMax != null
+              ? `Prazo de entrega: ${deliveryDaysMin}–${deliveryDaysMax} dias úteis`
+              : deliveryDaysMin != null
+                ? `Prazo de entrega: a partir de ${deliveryDaysMin} dias úteis`
+                : `Prazo de entrega: até ${deliveryDaysMax} dias úteis`}
+          </p>
+        )}
+
         {/* Shipping calculator */}
-        <ShippingCalculator productId={productId} quantity={1} />
+        <ShippingCalculator
+          productId={productId}
+          quantity={1}
+          selectedOptionId={selectedShipping?.id ?? null}
+          onOptionSelect={setSelectedShipping}
+        />
 
         {/* Logistics block */}
         {logisticsConfig && (

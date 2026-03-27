@@ -15,16 +15,17 @@ import {
 
 type CheckoutSuccessDialogProps = {
   orderId?: string;
+  imageUrl?: string | null;
 };
 
-export function CheckoutSuccessDialog({ orderId }: CheckoutSuccessDialogProps) {
+export function CheckoutSuccessDialog({ orderId, imageUrl }: CheckoutSuccessDialogProps) {
   const [open, setOpen] = useState(true);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="text-center">
         <Image
-          src="/illustration.svg"
+          src={imageUrl || "/illustration.svg"}
           alt="Pagamento aprovado"
           width={300}
           height={300}

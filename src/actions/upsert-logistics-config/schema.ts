@@ -27,6 +27,8 @@ export const upsertLogisticsConfigSchema = z.object({
     .max(365, "Máximo 365 dias."),
   exchangePolicyText: z.string().trim().max(500).optional(),
   returnPolicyText: z.string().trim().max(500).optional(),
+  successImageUrl: z.string().url("URL inválida.").or(z.literal("")).optional(),
+  cancelImageUrl: z.string().url("URL inválida.").or(z.literal("")).optional(),
   paymentMethods: z
     .array(z.enum(["visa", "mastercard", "pix", "boleto", "elo", "amex"]))
     .min(1, "Selecione pelo menos um método de pagamento."),

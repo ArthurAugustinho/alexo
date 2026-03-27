@@ -147,6 +147,8 @@ export const productTable = pgTable("product", {
   widthCm: integer("width_cm"),
   heightCm: integer("height_cm"),
   lengthCm: integer("length_cm"),
+  deliveryDaysMin: integer("delivery_days_min"),
+  deliveryDaysMax: integer("delivery_days_max"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -377,6 +379,9 @@ export const cartItemTable = pgTable("cart_item", {
     .notNull()
     .references(() => productVariantTable.id, { onDelete: "cascade" }),
   quantity: integer("quantity").notNull().default(1),
+  shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
+  shippingServiceName: varchar("shipping_service_name", { length: 100 }),
+  shippingDays: integer("shipping_days"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -773,6 +778,8 @@ export const logisticsConfigTable = pgTable("logistics_config", {
   returnPolicyDays: integer("return_policy_days").notNull().default(30),
   exchangePolicyText: text("exchange_policy_text"),
   returnPolicyText: text("return_policy_text"),
+  successImageUrl: text("success_image_url"),
+  cancelImageUrl: text("cancel_image_url"),
   paymentMethods: text("payment_methods")
     .array()
     .notNull()
