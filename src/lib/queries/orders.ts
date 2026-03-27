@@ -55,6 +55,8 @@ export type OrderWithItems = {
 
 export type AdminOrderRow = Omit<OrderWithItems, "returnRequest"> & {
   stripePaymentIntentId: string | null;
+  discountInCents: number | null;
+  couponCode: string | null;
   user: { name: string; email: string };
 };
 
@@ -236,6 +238,8 @@ export async function getAllOrdersForAdmin(): Promise<AdminOrderRow[]> {
     trackingUrl: row.trackingUrl,
     statusNote: row.statusNote,
     stripePaymentIntentId: row.stripePaymentIntentId,
+    discountInCents: row.discountInCents,
+    couponCode: row.couponCode,
     user: { name: row.user.name, email: row.user.email },
     items: mapItems(row.items),
   }));

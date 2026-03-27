@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { HeartIcon, LogInIcon, LogOutIcon, MenuIcon, PackageIcon, UserCircleIcon } from "lucide-react";
+import { HeartIcon, LogInIcon, LogOutIcon, MapPinIcon, MenuIcon, PackageIcon, UserCircleIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "../ui/sheet";
+import { AddressesSheet } from "./addresses-sheet";
 import { Cart } from "./cart";
 import { OrdersSheet } from "./orders-sheet";
 import { ProfileSheet } from "./profile-sheet";
@@ -34,6 +35,7 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
+  const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const { data: wishlistProductIds = [] } = useQuery({
     queryKey: ["wishlist-product-ids", session?.user?.id],
     queryFn: () => getWishlistProductIdsForCurrentUser(),
@@ -62,6 +64,11 @@ export const Header = () => {
   function handleOpenOrders() {
     setIsMenuOpen(false);
     setIsOrdersOpen(true);
+  }
+
+  function handleOpenAddresses() {
+    setIsMenuOpen(false);
+    setIsAddressesOpen(true);
   }
 
   return (
@@ -152,6 +159,19 @@ export const Header = () => {
 
                   <button
                     type="button"
+                    onClick={handleOpenAddresses}
+                    className="hover:bg-muted mt-3 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="bg-muted flex size-9 items-center justify-center rounded-full">
+                        <MapPinIcon className="size-4" />
+                      </span>
+                      <span className="text-sm font-medium">Meus endereços</span>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleGoToWishlist}
                     className="hover:bg-muted mt-3 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
                   >
@@ -199,6 +219,14 @@ export const Header = () => {
         <OrdersSheet
           open={isOrdersOpen}
           onOpenChange={setIsOrdersOpen}
+          userId={session.user.id}
+        />
+      )}
+
+      {session?.user?.id && (
+        <AddressesSheet
+          open={isAddressesOpen}
+          onOpenChange={setIsAddressesOpen}
           userId={session.user.id}
         />
       )}

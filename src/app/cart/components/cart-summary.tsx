@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { CouponInput } from "@/components/cart/coupon-input";
 import { ShippingCalculator } from "@/components/shipping/shipping-calculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +22,8 @@ type CartSummaryProduct = {
 interface CartSummaryProps {
   subtotalInCents: number;
   products: CartSummaryProduct[];
+  appliedCouponCode?: string | null;
+  discountInCents?: number;
 }
 
 const formatCurrency = (valueInCents: number) =>
@@ -30,11 +33,19 @@ const formatCurrency = (valueInCents: number) =>
     minimumFractionDigits: 0,
   }).format(valueInCents / 100);
 
-const CartSummary = ({ subtotalInCents, products }: CartSummaryProps) => {
+const CartSummary = ({
+  subtotalInCents,
+  products,
+  appliedCouponCode = null,
+  discountInCents = 0,
+}: CartSummaryProps) => {
   const [selectedShippingOption, setSelectedShippingOption] =
     useState<ShippingOption | null>(null);
   const shippingInCents = selectedShippingOption?.priceInCents ?? 0;
-  const totalInCents = subtotalInCents + shippingInCents;
+  const totalInCents = Math.max(
+    0,
+    subtotalInCents - discountInCents + shippingInCents,
+  );
 
   return (
     <Card>
@@ -54,6 +65,13 @@ const CartSummary = ({ subtotalInCents, products }: CartSummaryProps) => {
 
         <Separator />
 
+        <CouponInput
+          appliedCouponCode={appliedCouponCode}
+          discountInCents={discountInCents}
+        />
+
+        <Separator />
+
         <div className="space-y-2 text-sm">
           <div className="flex items-center justify-between">
             <span>Subtotal</span>
@@ -61,6 +79,14 @@ const CartSummary = ({ subtotalInCents, products }: CartSummaryProps) => {
               {formatCurrency(subtotalInCents)}
             </span>
           </div>
+          {discountInCents > 0 && (
+            <div className="flex items-center justify-between text-green-600">
+              <span>Desconto</span>
+              <span className="font-medium">
+                -{formatCurrency(discountInCents)}
+              </span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <span>Transporte e Manuseio</span>
             <span

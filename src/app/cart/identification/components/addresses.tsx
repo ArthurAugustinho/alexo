@@ -1,381 +1,150 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { PatternFormat } from "react-number-format";
 import { toast } from "sonner";
-import z from "zod";
 
+import { AddressForm } from "@/components/addresses/address-form";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { shippingAddressTable } from "@/db/schema";
-import { useCreateShippingAddress } from "@/hooks/mutations/use-create-shipping-address";
 import { useUpdateCartShippingAddress } from "@/hooks/mutations/use-update-cart-shipping-address";
-import { useUserAddresses } from "@/hooks/queries/use-user-addresses";
-
-import { formatAddress } from "../../helpers/address";
-
-const formSchema = z.object({
-  email: z.email("E-mail inválido"),
-  fullName: z.string().min(1, "Nome completo é obrigatório"),
-  cpf: z.string().min(14, "CPF inválido"),
-  phone: z.string().min(15, "Celular inválido"),
-  zipCode: z.string().min(9, "CEP inválido"),
-  address: z.string().min(1, "Endereço é obrigatório"),
-  number: z.string().min(1, "Número é obrigatório"),
-  complement: z.string().optional(),
-  neighborhood: z.string().min(1, "Bairro é obrigatório"),
-  city: z.string().min(1, "Cidade é obrigatória"),
-  state: z.string().min(1, "Estado é obrigatório"),
-});
-
-type FormValues = z.infer<typeof formSchema>;
+import { getAddressesQueryKey, useAddresses } from "@/hooks/queries/use-addresses";
+import type { ShippingAddress } from "@/lib/queries/addresses";
 
 interface AddressesProps {
-  shippingAddresses: (typeof shippingAddressTable.$inferSelect)[];
-  defaultShippingAddressId: string | null;
+  userId: string;
+  shippingAddresses: ShippingAddress[];
+  defaultAddressId: string | null;
 }
 
 const Addresses = ({
+  userId,
   shippingAddresses,
-  defaultShippingAddressId,
+  defaultAddressId,
 }: AddressesProps) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [selectedAddress, setSelectedAddress] = useState<string | null>(
-    defaultShippingAddressId || null,
+    defaultAddressId,
   );
-  const createShippingAddressMutation = useCreateShippingAddress();
+  const [showNewForm, setShowNewForm] = useState(false);
+
+  const { data: addresses = shippingAddresses } = useAddresses(userId);
   const updateCartShippingAddressMutation = useUpdateCartShippingAddress();
-  const { data: addresses, isLoading } = useUserAddresses({
-    initialData: shippingAddresses,
-  });
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      fullName: "",
-      cpf: "",
-      phone: "",
-      zipCode: "",
-      address: "",
-      number: "",
-      complement: "",
-      neighborhood: "",
-      city: "",
-      state: "",
-    },
-  });
-
-  const onSubmit = async (values: FormValues) => {
-    try {
-      const newAddress =
-        await createShippingAddressMutation.mutateAsync(values);
-      toast.success("Endereço criado com sucesso!");
-      form.reset();
-      setSelectedAddress(newAddress.id);
-
-      await updateCartShippingAddressMutation.mutateAsync({
-        shippingAddressId: newAddress.id,
-      });
-      toast.success("Endereço vinculado ao carrinho!");
-    } catch (error) {
-      toast.error("Erro ao criar endereço. Tente novamente.");
-      console.error(error);
-    }
-  };
-
-  const handleGoToPayment = async () => {
+  async function handleGoToPayment() {
     if (!selectedAddress || selectedAddress === "add_new") return;
 
     try {
       await updateCartShippingAddressMutation.mutateAsync({
         shippingAddressId: selectedAddress,
       });
-      toast.success("Endereço selecionado para entrega!");
       router.push("/cart/confirmation");
-    } catch (error) {
+    } catch {
       toast.error("Erro ao selecionar endereço. Tente novamente.");
-      console.error(error);
     }
-  };
+  }
+
+  function handleNewAddressSuccess(id: string) {
+    void queryClient.invalidateQueries({
+      queryKey: getAddressesQueryKey(userId),
+    });
+    setSelectedAddress(id);
+    setShowNewForm(false);
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Identificação</CardTitle>
+        <CardTitle>Endereço de entrega</CardTitle>
       </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="py-4 text-center">
-            <p>Carregando endereços...</p>
-          </div>
-        ) : (
-          <RadioGroup
-            value={selectedAddress}
-            onValueChange={setSelectedAddress}
-          >
-            {addresses?.length === 0 && (
-              <div className="py-4 text-center">
-                <p className="text-muted-foreground">
-                  Você ainda não possui endereços cadastrados.
-                </p>
-              </div>
-            )}
-
-            {addresses?.map((address) => (
-              <Card key={address.id}>
-                <CardContent>
-                  <div className="flex items-start space-x-2">
-                    <RadioGroupItem value={address.id} id={address.id} />
-                    <div className="flex-1">
-                      <Label htmlFor={address.id} className="cursor-pointer">
-                        <div>
-                          <p className="text-sm">{formatAddress(address)}</p>
-                        </div>
-                      </Label>
+      <CardContent className="space-y-4">
+        <RadioGroup
+          value={selectedAddress ?? undefined}
+          onValueChange={(v) => {
+            if (v === "add_new") {
+              setShowNewForm(true);
+              setSelectedAddress("add_new");
+            } else {
+              setShowNewForm(false);
+              setSelectedAddress(v);
+            }
+          }}
+        >
+          {addresses.map((address) => (
+            <Card key={address.id} className="cursor-pointer">
+              <CardContent className="py-3">
+                <div className="flex items-start gap-3">
+                  <RadioGroupItem
+                    value={address.id}
+                    id={address.id}
+                    className="mt-0.5"
+                  />
+                  <Label
+                    htmlFor={address.id}
+                    className="flex-1 cursor-pointer space-y-0.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{address.label}</span>
+                      {address.isDefault && (
+                        <Badge
+                          variant="secondary"
+                          className="rounded-full px-2 py-0 text-[10px]"
+                        >
+                          PADRÃO
+                        </Badge>
+                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            <Card>
-              <CardContent>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="add_new" id="add_new" />
-                  <Label htmlFor="add_new">Adicionar novo endereço</Label>
+                    <p className="text-muted-foreground text-sm">
+                      {address.street}, {address.number}
+                      {address.complement ? ` - ${address.complement}` : ""},{" "}
+                      {address.city}/{address.state}
+                    </p>
+                  </Label>
                 </div>
               </CardContent>
             </Card>
-          </RadioGroup>
-        )}
+          ))}
 
-        {selectedAddress && selectedAddress !== "add_new" && (
-          <div className="mt-4">
-            <Button
-              onClick={handleGoToPayment}
-              className="w-full"
-              disabled={updateCartShippingAddressMutation.isPending}
-            >
-              {updateCartShippingAddressMutation.isPending
-                ? "Processando..."
-                : "Ir para pagamento"}
-            </Button>
+          <Card className="cursor-pointer">
+            <CardContent className="py-3">
+              <div className="flex items-center gap-3">
+                <RadioGroupItem value="add_new" id="add_new" />
+                <Label htmlFor="add_new" className="cursor-pointer text-sm">
+                  + Usar novo endereço
+                </Label>
+              </div>
+            </CardContent>
+          </Card>
+        </RadioGroup>
+
+        {showNewForm && (
+          <div className="rounded-2xl border p-4">
+            <AddressForm
+              userId={userId}
+              onSuccess={handleNewAddressSuccess}
+              onCancel={() => {
+                setShowNewForm(false);
+                setSelectedAddress(defaultAddressId);
+              }}
+            />
           </div>
         )}
 
-        {selectedAddress === "add_new" && (
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="mt-4 space-y-4"
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite seu email" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome completo</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Digite seu nome completo"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="cpf"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CPF</FormLabel>
-                      <FormControl>
-                        <PatternFormat
-                          format="###.###.###-##"
-                          placeholder="000.000.000-00"
-                          customInput={Input}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Celular</FormLabel>
-                      <FormControl>
-                        <PatternFormat
-                          format="(##) #####-####"
-                          placeholder="(11) 99999-9999"
-                          customInput={Input}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="zipCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CEP</FormLabel>
-                      <FormControl>
-                        <PatternFormat
-                          format="#####-###"
-                          placeholder="00000-000"
-                          customInput={Input}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="address"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endereço</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite seu endereço" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite o número" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="complement"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Complemento</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Apto, bloco, etc. (opcional)"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="neighborhood"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bairro</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite o bairro" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cidade</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite a cidade" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite o estado" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={
-                  createShippingAddressMutation.isPending ||
-                  updateCartShippingAddressMutation.isPending
-                }
-              >
-                {createShippingAddressMutation.isPending ||
-                updateCartShippingAddressMutation.isPending
-                  ? "Salvando..."
-                  : "Salvar endereço"}
-              </Button>
-            </form>
-          </Form>
+        {selectedAddress && selectedAddress !== "add_new" && !showNewForm && (
+          <Button
+            onClick={handleGoToPayment}
+            className="w-full"
+            disabled={updateCartShippingAddressMutation.isPending}
+          >
+            {updateCartShippingAddressMutation.isPending
+              ? "Processando..."
+              : "Continuar →"}
+          </Button>
         )}
       </CardContent>
     </Card>

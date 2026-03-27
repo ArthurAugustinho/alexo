@@ -61,6 +61,8 @@ const ConfirmationPage = async () => {
         </Card>
         <CartSummary
           subtotalInCents={cartTotalInCents}
+          appliedCouponCode={cart.appliedCouponCode ?? null}
+          discountInCents={cart.discountInCents ?? 0}
           products={cart.items.map((item) => ({
             id: item.productVariant.id,
             productId: item.productVariant.product.id,

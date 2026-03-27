@@ -1,4 +1,4 @@
-import { PackageIcon, RotateCcwIcon, Settings2Icon, StarIcon } from "lucide-react";
+import { PackageIcon, RotateCcwIcon, Settings2Icon, StarIcon, TagIcon } from "lucide-react";
 import Link from "next/link";
 
 import { AdminSignOutButton } from "@/components/admin/admin-sign-out-button";
@@ -82,6 +82,12 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
                         {pendingReturns}
                       </span>
                     )}
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/admin/cupons">
+                    <TagIcon />
+                    Cupons
                   </Link>
                 </Button>
                 <Button asChild variant="outline">

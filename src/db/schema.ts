@@ -310,6 +310,8 @@ export const shippingAddressTable = pgTable("shipping_address", {
   userId: text("user_id")
     .notNull()
     .references(() => userTable.id, { onDelete: "cascade" }),
+  label: varchar("label", { length: 50 }).notNull().default("Casa"),
+  isDefault: boolean("is_default").notNull().default(false),
   recipientName: text().notNull(),
   street: text().notNull(),
   number: text().notNull(),
@@ -318,10 +320,10 @@ export const shippingAddressTable = pgTable("shipping_address", {
   state: text().notNull(),
   neighborhood: text().notNull(),
   zipCode: text().notNull(),
-  country: text().notNull(),
-  phone: text().notNull(),
-  email: text().notNull(),
-  cpfOrCnpj: text().notNull(),
+  country: text().notNull().default("Brasil"),
+  phone: text().notNull().default(""),
+  email: text().notNull().default(""),
+  cpfOrCnpj: text().notNull().default(""),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -349,6 +351,8 @@ export const cartTable = pgTable("cart", {
     () => shippingAddressTable.id,
     { onDelete: "set null" },
   ),
+  appliedCouponCode: varchar("applied_coupon_code", { length: 50 }),
+  discountInCents: integer("discount_in_cents").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -432,6 +436,10 @@ export const orderTable = pgTable("order", {
   email: text().notNull(),
   cpfOrCnpj: text().notNull(),
   totalPriceInCents: integer("total_price_in_cents").notNull(),
+  originalTotalInCents: integer("original_total_in_cents"),
+  discountInCents: integer("discount_in_cents").notNull().default(0),
+  couponCode: varchar("coupon_code", { length: 50 }),
+  discountType: varchar("discount_type", { length: 20 }),
   status: orderStatus().notNull().default("pending"),
   stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
   trackingCode: varchar("tracking_code", { length: 100 }),
@@ -458,6 +466,10 @@ export const orderRelations = relations(orderTable, ({ one, many }) => ({
     fields: [orderTable.id],
     references: [returnRequestTable.orderId],
   }),
+  couponUsage: one(couponUsageTable, {
+    fields: [orderTable.id],
+    references: [couponUsageTable.orderId],
+  }),
 }));
 
 export const orderItemTable = pgTable("order_item", {
@@ -481,6 +493,81 @@ export const orderItemRelations = relations(orderItemTable, ({ one }) => ({
   productVariant: one(productVariantTable, {
     fields: [orderItemTable.productVariantId],
     references: [productVariantTable.id],
+  }),
+}));
+
+export const couponTable = pgTable(
+  "coupon",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    description: varchar("description", { length: 255 }),
+    type: varchar("type", { length: 20 }).notNull(),
+    value: integer("value").notNull().default(0),
+    categoryId: uuid("category_id").references(() => categoryTable.id, {
+      onDelete: "set null",
+    }),
+    minOrderValueInCents: integer("min_order_value_in_cents")
+      .notNull()
+      .default(0),
+    maxDiscountInCents: integer("max_discount_in_cents"),
+    maxUsesTotal: integer("max_uses_total"),
+    maxUsesPerUser: integer("max_uses_per_user").notNull().default(1),
+    isFirstOrderOnly: boolean("is_first_order_only").notNull().default(false),
+    isActive: boolean("is_active").notNull().default(true),
+    startsAt: timestamp("starts_at"),
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("coupon_code_idx").on(t.code),
+    index("coupon_active_idx").on(t.isActive, t.expiresAt),
+  ],
+);
+
+export const couponRelations = relations(couponTable, ({ one, many }) => ({
+  category: one(categoryTable, {
+    fields: [couponTable.categoryId],
+    references: [categoryTable.id],
+  }),
+  usages: many(couponUsageTable),
+}));
+
+export const couponUsageTable = pgTable(
+  "coupon_usage",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    couponId: uuid("coupon_id")
+      .notNull()
+      .references(() => couponTable.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orderTable.id, { onDelete: "cascade" }),
+    discountAppliedInCents: integer("discount_applied_in_cents").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("coupon_usage_order_idx").on(t.couponId, t.orderId),
+    index("coupon_usage_user_idx").on(t.couponId, t.userId),
+  ],
+);
+
+export const couponUsageRelations = relations(couponUsageTable, ({ one }) => ({
+  coupon: one(couponTable, {
+    fields: [couponUsageTable.couponId],
+    references: [couponTable.id],
+  }),
+  user: one(userTable, {
+    fields: [couponUsageTable.userId],
+    references: [userTable.id],
+  }),
+  order: one(orderTable, {
+    fields: [couponUsageTable.orderId],
+    references: [orderTable.id],
   }),
 }));
 
