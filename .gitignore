@@ -43,3 +43,5 @@ next-env.d.ts
 # user uploads
 /public/uploads/brands/*
 !/public/uploads/brands/.gitkeep
+/public/uploads/avatars/*
+!/public/uploads/avatars/.gitkeep

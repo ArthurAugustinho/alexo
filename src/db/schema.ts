@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   numeric,
@@ -40,6 +41,12 @@ export const userTable = pgTable("user", {
   updatedAt: timestamp("updated_at")
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
+  phone: varchar("phone", { length: 20 }),
+  birthDate: date("birth_date"),
+  gender: varchar("gender", { length: 20 }),
+  cpf: varchar("cpf", { length: 11 }),
+  emailMarketing: boolean("email_marketing").notNull().default(true),
+  whatsappMarketing: boolean("whatsapp_marketing").notNull().default(false),
 });
 
 export const userRelations = relations(userTable, ({ many, one }) => ({

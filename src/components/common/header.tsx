@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { HeartIcon, LogInIcon, LogOutIcon, MenuIcon } from "lucide-react";
+import { HeartIcon, LogInIcon, LogOutIcon, MenuIcon, UserCircleIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { useProfile } from "@/hooks/queries/use-profile";
 import { getWishlistProductIdsForCurrentUser } from "@/lib/actions/wishlist";
 import { authClient } from "@/lib/auth-client";
 
@@ -21,6 +22,7 @@ import {
   SheetTrigger,
 } from "../ui/sheet";
 import { Cart } from "./cart";
+import { ProfileSheet } from "./profile-sheet";
 import { SearchBar } from "./search-bar";
 import { SearchModal } from "./search-modal";
 
@@ -28,16 +30,26 @@ export const Header = () => {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { data: wishlistProductIds = [] } = useQuery({
     queryKey: ["wishlist-product-ids", session?.user?.id],
     queryFn: () => getWishlistProductIdsForCurrentUser(),
     enabled: Boolean(session?.user?.id),
     staleTime: 30_000,
   });
+  const { data: profile } = useProfile(session?.user?.id);
+  const isProfileIncomplete =
+    !!session?.user?.id &&
+    (!profile?.phone || !profile?.birthDate || !profile?.gender || !profile?.cpf);
 
   function handleGoToWishlist() {
     setIsMenuOpen(false);
     router.push("/wishlist");
+  }
+
+  function handleOpenProfile() {
+    setIsMenuOpen(false);
+    setIsProfileOpen(true);
   }
 
   return (
@@ -62,13 +74,18 @@ export const Header = () => {
                 <>
                   <div className="flex justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={session.user.image ?? undefined} />
-                        <AvatarFallback>
-                          {session.user.name?.split(" ")?.[0]?.[0]}
-                          {session.user.name?.split(" ")?.[1]?.[0]}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar>
+                          <AvatarImage src={profile?.image ?? session.user.image ?? undefined} />
+                          <AvatarFallback>
+                            {session.user.name?.split(" ")?.[0]?.[0]}
+                            {session.user.name?.split(" ")?.[1]?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        {isProfileIncomplete && (
+                          <span className="absolute top-0 right-0 size-2.5 rounded-full bg-amber-400 ring-2 ring-white" />
+                        )}
+                      </div>
 
                       <div>
                         <h3 className="font-semibold">{session.user.name}</h3>
@@ -89,8 +106,24 @@ export const Header = () => {
 
                   <button
                     type="button"
-                    onClick={handleGoToWishlist}
+                    onClick={handleOpenProfile}
                     className="hover:bg-muted mt-6 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="bg-muted flex size-9 items-center justify-center rounded-full">
+                        <UserCircleIcon className="size-4" />
+                      </span>
+                      <span className="text-sm font-medium">Meu cadastro</span>
+                    </span>
+                    {isProfileIncomplete && (
+                      <span className="text-xs font-medium text-amber-500">Incompleto</span>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleGoToWishlist}
+                    className="hover:bg-muted mt-3 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition-colors"
                   >
                     <span className="flex items-center gap-3">
                       <span className="bg-muted flex size-9 items-center justify-center rounded-full">
@@ -123,6 +156,14 @@ export const Header = () => {
         <SearchBar />
         <Cart isAuthenticated={Boolean(session?.user)} />
       </div>
+
+      {session?.user?.id && (
+        <ProfileSheet
+          open={isProfileOpen}
+          onOpenChange={setIsProfileOpen}
+          userId={session.user.id}
+        />
+      )}
     </header>
   );
 };
