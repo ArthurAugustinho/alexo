@@ -30,9 +30,9 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(155,92,255,0.14),_transparent_32%),linear-gradient(180deg,_rgba(255,255,255,0.98),_rgba(246,243,255,0.92))]">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
-        <header className="border-border/70 bg-background/85 sticky top-4 z-20 mb-6 rounded-3xl border px-4 py-4 shadow-sm backdrop-blur sm:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3">
+        <header className="border-border/70 bg-background/85 sticky top-4 z-20 mb-6 overflow-hidden rounded-3xl border shadow-sm backdrop-blur">
+          <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
+            <div className="flex shrink-0 items-center gap-3">
               <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-lg font-semibold text-primary">
                 A
               </div>
@@ -44,8 +44,8 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="border-border/70 bg-muted/40 flex items-center gap-3 rounded-2xl border px-3 py-2">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="border-border/70 bg-muted/40 flex shrink-0 items-center gap-3 rounded-2xl border px-3 py-2">
                 <Avatar>
                   <AvatarImage src={user.image ?? undefined} />
                   <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
@@ -61,7 +61,7 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
                 </Badge>
               </div>
 
-              <div className="flex gap-2">
+              <nav className="scrollbar-hide flex flex-nowrap items-center gap-1 overflow-x-auto">
                 {role === "super_admin" ? (
                   <Button asChild variant="outline">
                     <Link href="/admin/vitrine/banners">
@@ -112,7 +112,7 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
                   </Link>
                 </Button>
                 <AdminSignOutButton />
-              </div>
+              </nav>
             </div>
           </div>
         </header>
