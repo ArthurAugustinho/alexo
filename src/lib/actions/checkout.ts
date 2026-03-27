@@ -20,11 +20,17 @@ const checkoutSessionSchema = z.object({
 
 type ActionResult = { success: boolean; message: string };
 
-export const finishOrder = async (): Promise<
-  ActionResult & { orderId?: string }
-> => {
+export const finishOrder = async (input: {
+  shippingCostInCents: number;
+}): Promise<ActionResult & { orderId?: string }> => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return { success: false, message: "Não autorizado." };
+
+  if (
+    !Number.isInteger(input.shippingCostInCents) ||
+    input.shippingCostInCents < 0
+  )
+    return { success: false, message: "Custo de frete inválido." };
 
   const cart = await db.query.cartTable.findFirst({
     where: eq(cartTable.userId, session.user.id),
@@ -42,9 +48,14 @@ export const finishOrder = async (): Promise<
       message: "Uma ou mais variantes do carrinho estão indisponíveis.",
     };
 
-  const totalPriceInCents = cart.items.reduce(
+  const subtotalInCents = cart.items.reduce(
     (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
     0,
+  );
+  const discountInCents = cart.discountInCents ?? 0;
+  const totalPriceInCents = Math.max(
+    0,
+    subtotalInCents - discountInCents + input.shippingCostInCents,
   );
 
   let orderId: string | undefined;
@@ -55,11 +66,11 @@ export const finishOrder = async (): Promise<
     const [order] = await tx
       .insert(orderTable)
       .values({
-        email: cart.shippingAddress.email,
+        email: cart.shippingAddress.email || session.user.email,
         zipCode: cart.shippingAddress.zipCode,
         country: cart.shippingAddress.country,
         phone: cart.shippingAddress.phone,
-        cpfOrCnpj: cart.shippingAddress.cpfOrCnpj,
+        cpfOrCnpj: cart.shippingAddress.cpfOrCnpj || "",
         city: cart.shippingAddress.city,
         complement: cart.shippingAddress.complement,
         neighborhood: cart.shippingAddress.neighborhood,
@@ -70,6 +81,9 @@ export const finishOrder = async (): Promise<
         userId: session.user.id,
         totalPriceInCents,
         shippingAddressId: cart.shippingAddress.id,
+        originalTotalInCents: subtotalInCents,
+        discountInCents,
+        couponCode: cart.appliedCouponCode ?? null,
       })
       .returning();
 

@@ -2,13 +2,10 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { Header } from "@/components/common/header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { auth } from "@/lib/auth";
 
-import CartSummary from "../components/cart-summary";
-import { formatAddress } from "../helpers/address";
-import FinishOrderButton from "./components/finish-order-button";
+import { ConfirmationClient } from "./components/confirmation-client";
 
 const ConfirmationPage = async () => {
   const session = await auth.api.getSession({
@@ -35,34 +32,24 @@ const ConfirmationPage = async () => {
   if (!cart || cart?.items.length === 0) {
     redirect("/");
   }
-  const cartTotalInCents = cart.items.reduce(
-    (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
-    0,
-  );
   if (!cart.shippingAddress) {
     redirect("/cart/identification");
   }
+
+  const subtotalInCents = cart.items.reduce(
+    (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
+    0,
+  );
+
   return (
     <div>
       <Header />
-      <div className="space-y-4 px-5">
-        <Card>
-          <CardHeader>
-            <CardTitle>Identificação</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Card>
-              <CardContent>
-                <p className="text-sm">{formatAddress(cart.shippingAddress)}</p>
-              </CardContent>
-            </Card>
-            <FinishOrderButton />
-          </CardContent>
-        </Card>
-        <CartSummary
-          subtotalInCents={cartTotalInCents}
+      <div className="px-5 pb-8">
+        <ConfirmationClient
+          subtotalInCents={subtotalInCents}
           appliedCouponCode={cart.appliedCouponCode ?? null}
           discountInCents={cart.discountInCents ?? 0}
+          address={cart.shippingAddress}
           products={cart.items.map((item) => ({
             id: item.productVariant.id,
             productId: item.productVariant.product.id,

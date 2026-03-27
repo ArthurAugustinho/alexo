@@ -16,7 +16,12 @@ import {
 import { useFinishOrder } from "@/hooks/mutations/use-finish-order";
 import { createCheckoutSession } from "@/lib/actions/checkout";
 
-const FinishOrderButton = () => {
+type Props = {
+  shippingCostInCents: number;
+  shippingNotSelected: boolean;
+};
+
+const FinishOrderButton = ({ shippingCostInCents, shippingNotSelected }: Props) => {
   const [errorDialogIsOpen, setErrorDialogIsOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const finishOrderMutation = useFinishOrder();
@@ -28,7 +33,7 @@ const FinishOrderButton = () => {
         throw new Error("Stripe publishable key is not set");
       }
 
-      const { orderId } = await finishOrderMutation.mutateAsync();
+      const { orderId } = await finishOrderMutation.mutateAsync(shippingCostInCents);
 
       const sessionResult = await createCheckoutSession({ orderId });
       if (!sessionResult.success || !sessionResult.sessionId) {
@@ -62,11 +67,18 @@ const FinishOrderButton = () => {
 
   return (
     <>
+      {shippingNotSelected && (
+        <p className="text-muted-foreground text-center text-xs">
+          Calcule e selecione o frete para continuar
+        </p>
+      )}
       <Button
         className="w-full rounded-full"
         size="lg"
         onClick={handleFinishOrder}
-        disabled={finishOrderMutation.isPending || isRedirecting}
+        disabled={
+          finishOrderMutation.isPending || isRedirecting || shippingNotSelected
+        }
       >
         {(finishOrderMutation.isPending || isRedirecting) && (
           <Loader2 className="h-4 w-4 animate-spin" />

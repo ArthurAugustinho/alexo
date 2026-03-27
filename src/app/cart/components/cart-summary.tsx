@@ -24,6 +24,7 @@ interface CartSummaryProps {
   products: CartSummaryProduct[];
   appliedCouponCode?: string | null;
   discountInCents?: number;
+  onShippingChange?: (option: ShippingOption | null) => void;
 }
 
 const formatCurrency = (valueInCents: number) =>
@@ -38,10 +39,16 @@ const CartSummary = ({
   products,
   appliedCouponCode = null,
   discountInCents = 0,
+  onShippingChange,
 }: CartSummaryProps) => {
   const [selectedShippingOption, setSelectedShippingOption] =
     useState<ShippingOption | null>(null);
   const shippingInCents = selectedShippingOption?.priceInCents ?? 0;
+
+  const handleShippingSelect = (option: ShippingOption | null) => {
+    setSelectedShippingOption(option);
+    onShippingChange?.(option);
+  };
   const totalInCents = Math.max(
     0,
     subtotalInCents - discountInCents + shippingInCents,
@@ -60,7 +67,7 @@ const CartSummary = ({
           }))}
           note="* Valor estimado. O frete sera confirmado no checkout."
           selectedOptionId={selectedShippingOption?.id ?? null}
-          onOptionSelect={setSelectedShippingOption}
+          onOptionSelect={handleShippingSelect}
         />
 
         <Separator />
