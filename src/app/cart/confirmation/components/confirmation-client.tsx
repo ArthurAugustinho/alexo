@@ -1,11 +1,8 @@
 "use client";
 
-import { useState } from "react";
-
 import CartSummary from "@/app/cart/components/cart-summary";
 import { formatAddress } from "@/app/cart/helpers/address";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { type ShippingOption } from "@/lib/shipping-schema";
 
 import FinishOrderButton from "./finish-order-button";
 
@@ -36,6 +33,7 @@ type Address = {
 
 type Props = {
   subtotalInCents: number;
+  storedShippingInCents: number;
   products: Product[];
   address: Address;
   appliedCouponCode: string | null;
@@ -44,14 +42,12 @@ type Props = {
 
 export function ConfirmationClient({
   subtotalInCents,
+  storedShippingInCents,
   products,
   address,
   appliedCouponCode,
   discountInCents,
 }: Props) {
-  const [selectedShipping, setSelectedShipping] =
-    useState<ShippingOption | null>(null);
-
   return (
     <div className="space-y-4">
       <Card>
@@ -64,19 +60,17 @@ export function ConfirmationClient({
               <p className="text-sm">{formatAddress(address)}</p>
             </CardContent>
           </Card>
-          <FinishOrderButton
-            shippingCostInCents={selectedShipping?.priceInCents ?? 0}
-            shippingNotSelected={selectedShipping === null}
-          />
+          <FinishOrderButton />
         </CardContent>
       </Card>
 
       <CartSummary
         subtotalInCents={subtotalInCents}
+        storedShippingInCents={storedShippingInCents}
         appliedCouponCode={appliedCouponCode}
         discountInCents={discountInCents}
         products={products}
-        onShippingChange={setSelectedShipping}
+        showShipping={false}
       />
     </div>
   );

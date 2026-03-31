@@ -40,6 +40,10 @@ const ConfirmationPage = async () => {
     (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
     0,
   );
+  const storedShippingInCents = cart.items.reduce(
+    (acc, item) => acc + (item.shippingCostInCents ?? 0),
+    0,
+  );
 
   return (
     <div>
@@ -47,6 +51,7 @@ const ConfirmationPage = async () => {
       <div className="px-5 pb-8">
         <ConfirmationClient
           subtotalInCents={subtotalInCents}
+          storedShippingInCents={storedShippingInCents}
           appliedCouponCode={cart.appliedCouponCode ?? null}
           discountInCents={cart.discountInCents ?? 0}
           address={cart.shippingAddress}

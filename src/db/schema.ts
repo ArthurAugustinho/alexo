@@ -381,7 +381,8 @@ export const cartItemTable = pgTable("cart_item", {
   quantity: integer("quantity").notNull().default(1),
   shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
   shippingServiceName: varchar("shipping_service_name", { length: 100 }),
-  shippingDays: integer("shipping_days"),
+  shippingDaysMin: integer("shipping_days_min"),
+  shippingDaysMax: integer("shipping_days_max"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -441,6 +442,7 @@ export const orderTable = pgTable("order", {
   email: text().notNull(),
   cpfOrCnpj: text().notNull(),
   totalPriceInCents: integer("total_price_in_cents").notNull(),
+  shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
   originalTotalInCents: integer("original_total_in_cents"),
   discountInCents: integer("discount_in_cents").notNull().default(0),
   couponCode: varchar("coupon_code", { length: 50 }),

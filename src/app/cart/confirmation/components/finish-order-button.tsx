@@ -15,12 +15,7 @@ import {
 import { useFinishOrder } from "@/hooks/mutations/use-finish-order";
 import { createCheckoutSession } from "@/lib/actions/checkout";
 
-type Props = {
-  shippingCostInCents: number;
-  shippingNotSelected: boolean;
-};
-
-const FinishOrderButton = ({ shippingCostInCents, shippingNotSelected }: Props) => {
+const FinishOrderButton = () => {
   const [errorDialogIsOpen, setErrorDialogIsOpen] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const finishOrderMutation = useFinishOrder();
@@ -28,7 +23,7 @@ const FinishOrderButton = ({ shippingCostInCents, shippingNotSelected }: Props) 
   const handleFinishOrder = async () => {
     setErrorDialogIsOpen(false);
     try {
-      const { orderId } = await finishOrderMutation.mutateAsync(shippingCostInCents);
+      const { orderId } = await finishOrderMutation.mutateAsync();
 
       const sessionResult = await createCheckoutSession({ orderId });
       if (!sessionResult.success || !sessionResult.sessionUrl) {
@@ -48,18 +43,11 @@ const FinishOrderButton = ({ shippingCostInCents, shippingNotSelected }: Props) 
 
   return (
     <>
-      {shippingNotSelected && (
-        <p className="text-muted-foreground text-center text-xs">
-          Calcule e selecione o frete para continuar
-        </p>
-      )}
       <Button
         className="w-full rounded-full"
         size="lg"
         onClick={handleFinishOrder}
-        disabled={
-          finishOrderMutation.isPending || isRedirecting || shippingNotSelected
-        }
+        disabled={finishOrderMutation.isPending || isRedirecting}
       >
         {(finishOrderMutation.isPending || isRedirecting) && (
           <Loader2 className="h-4 w-4 animate-spin" />

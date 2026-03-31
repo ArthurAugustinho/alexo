@@ -10,8 +10,8 @@ export const useFinishOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: getUseFinishOrderMutationKey(),
-    mutationFn: async (shippingCostInCents: number) => {
-      const result = await finishOrder({ shippingCostInCents });
+    mutationFn: async () => {
+      const result = await finishOrder();
       if (!result.success) throw new Error(result.message);
       return { orderId: result.orderId! };
     },

@@ -20,17 +20,11 @@ const checkoutSessionSchema = z.object({
 
 type ActionResult = { success: boolean; message: string };
 
-export const finishOrder = async (input: {
-  shippingCostInCents: number;
-}): Promise<ActionResult & { orderId?: string }> => {
+export const finishOrder = async (): Promise<
+  ActionResult & { orderId?: string }
+> => {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return { success: false, message: "Não autorizado." };
-
-  if (
-    !Number.isInteger(input.shippingCostInCents) ||
-    input.shippingCostInCents < 0
-  )
-    return { success: false, message: "Custo de frete inválido." };
 
   const cart = await db.query.cartTable.findFirst({
     where: eq(cartTable.userId, session.user.id),
@@ -52,10 +46,14 @@ export const finishOrder = async (input: {
     (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
     0,
   );
+  const shippingCostInCents = cart.items.reduce(
+    (acc, item) => acc + (item.shippingCostInCents ?? 0),
+    0,
+  );
   const discountInCents = cart.discountInCents ?? 0;
   const totalPriceInCents = Math.max(
     0,
-    subtotalInCents - discountInCents + input.shippingCostInCents,
+    subtotalInCents - discountInCents + shippingCostInCents,
   );
 
   let orderId: string | undefined;
@@ -80,6 +78,7 @@ export const finishOrder = async (input: {
         street: cart.shippingAddress.street,
         userId: session.user.id,
         totalPriceInCents,
+        shippingCostInCents,
         shippingAddressId: cart.shippingAddress.id,
         originalTotalInCents: subtotalInCents,
         discountInCents,
@@ -139,6 +138,33 @@ export const createCheckoutSession = async (data: {
     with: { productVariant: { with: { product: true } } },
   });
 
+  const productLineItems = orderItems.map((orderItem) => ({
+    price_data: {
+      currency: "brl",
+      product_data: {
+        name: `${orderItem.productVariant.product.name} - ${orderItem.productVariant.name}`,
+        description: orderItem.productVariant.product.description,
+        images: [orderItem.productVariant.imageUrl],
+      },
+      unit_amount: orderItem.priceInCents,
+    },
+    quantity: orderItem.quantity,
+  }));
+
+  const shippingLineItem =
+    order.shippingCostInCents > 0
+      ? [
+          {
+            price_data: {
+              currency: "brl",
+              product_data: { name: "Frete" },
+              unit_amount: order.shippingCostInCents,
+            },
+            quantity: 1,
+          },
+        ]
+      : [];
+
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const checkoutSession = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
@@ -146,18 +172,7 @@ export const createCheckoutSession = async (data: {
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?orderId=${payload.data.orderId}`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/cancel?orderId=${payload.data.orderId}`,
     metadata: { orderId: payload.data.orderId },
-    line_items: orderItems.map((orderItem) => ({
-      price_data: {
-        currency: "brl",
-        product_data: {
-          name: `${orderItem.productVariant.product.name} - ${orderItem.productVariant.name}`,
-          description: orderItem.productVariant.product.description,
-          images: [orderItem.productVariant.imageUrl],
-        },
-        unit_amount: orderItem.priceInCents,
-      },
-      quantity: orderItem.quantity,
-    })),
+    line_items: [...productLineItems, ...shippingLineItem],
   });
 
   if (!checkoutSession.url)

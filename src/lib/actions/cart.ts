@@ -13,7 +13,8 @@ const addProductToCartSchema = z.object({
   quantity: z.number().int().min(1),
   shippingCostInCents: z.number().int().min(0).default(0),
   shippingServiceName: z.string().max(100).nullable().optional(),
-  shippingDays: z.number().int().min(0).nullable().optional(),
+  shippingDaysMin: z.number().int().min(0).nullable().optional(),
+  shippingDaysMax: z.number().int().min(0).nullable().optional(),
 });
 
 const cartItemIdSchema = z.object({
@@ -113,7 +114,8 @@ export const addProductToCart = async (data: AddProductToCartInput) => {
     quantity: data.quantity,
     shippingCostInCents: data.shippingCostInCents ?? 0,
     shippingServiceName: data.shippingServiceName ?? null,
-    shippingDays: data.shippingDays ?? null,
+    shippingDaysMin: data.shippingDaysMin ?? null,
+    shippingDaysMax: data.shippingDaysMax ?? null,
   });
 };
 

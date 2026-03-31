@@ -26,6 +26,7 @@ interface CartSummaryProps {
   discountInCents?: number;
   onShippingChange?: (option: ShippingOption | null) => void;
   showShipping?: boolean;
+  storedShippingInCents?: number;
 }
 
 const formatCurrency = (valueInCents: number) =>
@@ -42,10 +43,12 @@ const CartSummary = ({
   discountInCents = 0,
   onShippingChange,
   showShipping = true,
+  storedShippingInCents,
 }: CartSummaryProps) => {
   const [selectedShippingOption, setSelectedShippingOption] =
     useState<ShippingOption | null>(null);
-  const shippingInCents = selectedShippingOption?.priceInCents ?? 0;
+  const shippingInCents =
+    storedShippingInCents ?? selectedShippingOption?.priceInCents ?? 0;
 
   const handleShippingSelect = (option: ShippingOption | null) => {
     setSelectedShippingOption(option);
@@ -99,37 +102,31 @@ const CartSummary = ({
               </span>
             </div>
           )}
-          {showShipping && (
-            <>
-              <div className="flex items-center justify-between">
-                <span>Transporte e Manuseio</span>
-                <span
-                  className={
-                    shippingInCents === 0
-                      ? "text-muted-foreground"
-                      : "font-medium"
-                  }
-                >
-                  {selectedShippingOption
-                    ? shippingInCents === 0
-                      ? "Gratis"
-                      : formatCurrency(shippingInCents)
-                    : "Calcule o frete"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Prazo estimado</span>
-                <span className="text-muted-foreground">
-                  {selectedShippingOption
-                    ? `Ate ${selectedShippingOption.deliveryTime} ${
-                        selectedShippingOption.deliveryTime === 1
-                          ? "dia util"
-                          : "dias uteis"
-                      }`
-                    : "—"}
-                </span>
-              </div>
-            </>
+          {(showShipping || storedShippingInCents !== undefined) && (
+            <div className="flex items-center justify-between">
+              <span>Transporte e Manuseio</span>
+              <span
+                className={
+                  shippingInCents === 0 ? "text-muted-foreground" : "font-medium"
+                }
+              >
+                {storedShippingInCents !== undefined ? (
+                  storedShippingInCents === 0 ? (
+                    "Gratis"
+                  ) : (
+                    formatCurrency(storedShippingInCents)
+                  )
+                ) : selectedShippingOption ? (
+                  shippingInCents === 0 ? (
+                    "Gratis"
+                  ) : (
+                    formatCurrency(shippingInCents)
+                  )
+                ) : (
+                  "Calcule o frete"
+                )}
+              </span>
+            </div>
           )}
           <div className="flex items-center justify-between text-base font-semibold">
             <span>Total</span>

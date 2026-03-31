@@ -1,10 +1,12 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MinusIcon, PlusIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, Loader2, MinusIcon, PlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { addProductToCart } from "@/lib/actions/cart";
 import { type ProductVariantModel } from "@/lib/product-variant-schema";
@@ -22,9 +24,11 @@ const ProductActions = ({
   selectedVariant,
   selectedShipping,
 }: ProductActionsProps) => {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [quantity, setQuantity] = useState(1);
-  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [shippingAlert, setShippingAlert] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const { mutate, isPending } = useMutation({
     mutationKey: ["addProductToCart", selectedVariant?.id, quantity],
     mutationFn: async () => {
@@ -39,11 +43,12 @@ const ProductActions = ({
         quantity,
         shippingCostInCents: selectedShipping.priceInCents,
         shippingServiceName: selectedShipping.name,
-        shippingDays: selectedShipping.deliveryTime,
+        shippingDaysMin: selectedShipping.deliveryTime,
+        shippingDaysMax: selectedShipping.deliveryTime,
       });
     },
     onSuccess: () => {
-      setInlineError(null);
+      setShippingAlert(false);
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast.success("Produto adicionado a sacola.");
     },
@@ -52,35 +57,61 @@ const ProductActions = ({
         error instanceof Error
           ? error.message
           : "Nao foi possivel adicionar o produto.";
-
-      setInlineError(message);
       toast.error(message);
     },
   });
 
   const canAddToCart = isSelectionComplete && !!selectedShipping;
 
-  useEffect(() => {
-    if (isSelectionComplete) {
-      setInlineError(null);
-    }
-  }, [isSelectionComplete]);
-
   function handleAddToCart() {
     if (!isSelectionComplete || (selectedVariant?.stock ?? 0) <= 0) {
-      const message = "Selecione um tamanho disponivel para continuar";
-      setInlineError(message);
-      toast.warning(message, { duration: 3000 });
+      toast.warning("Selecione um tamanho disponivel para continuar", {
+        duration: 3000,
+      });
       return;
     }
     if (!selectedShipping) {
-      const message = "Calcule e selecione o frete antes de adicionar ao carrinho";
-      setInlineError(message);
-      toast.warning(message, { duration: 3000 });
+      setShippingAlert(true);
+      document
+        .getElementById("shipping-calculator")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    setInlineError(null);
+    setShippingAlert(false);
     mutate();
+  }
+
+  async function handleBuyNow() {
+    if (!isSelectionComplete || (selectedVariant?.stock ?? 0) <= 0) {
+      toast.warning("Selecione um tamanho disponivel para continuar", {
+        duration: 3000,
+      });
+      return;
+    }
+    if (!selectedShipping) {
+      setShippingAlert(true);
+      document
+        .getElementById("shipping-calculator")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setShippingAlert(false);
+    setIsBuyingNow(true);
+    try {
+      await addProductToCart({
+        productVariantId: selectedVariant!.id,
+        quantity,
+        shippingCostInCents: selectedShipping.priceInCents,
+        shippingServiceName: selectedShipping.name,
+        shippingDaysMin: selectedShipping.deliveryTime,
+        shippingDaysMax: selectedShipping.deliveryTime,
+      });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      router.push("/cart/identification");
+    } catch {
+      toast.error("Nao foi possivel adicionar o produto.");
+      setIsBuyingNow(false);
+    }
   }
 
   return (
@@ -135,11 +166,23 @@ const ProductActions = ({
           <span>Adicionar a sacola</span>
         </Button>
 
-        {inlineError ? (
-          <p className="text-destructive text-sm">{inlineError}</p>
-        ) : null}
+        {shippingAlert && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Calcule e selecione o frete antes de adicionar ao carrinho.
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <Button className="rounded-full" size="lg" type="button">
+        <Button
+          className="rounded-full"
+          size="lg"
+          type="button"
+          disabled={isBuyingNow}
+          onClick={handleBuyNow}
+        >
+          {isBuyingNow && <Loader2 className="size-4 animate-spin" />}
           Comprar agora
         </Button>
       </div>

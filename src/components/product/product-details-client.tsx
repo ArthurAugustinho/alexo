@@ -193,12 +193,14 @@ const ProductDetailsClient = ({
         )}
 
         {/* Shipping calculator */}
-        <ShippingCalculator
-          productId={productId}
-          quantity={1}
-          selectedOptionId={selectedShipping?.id ?? null}
-          onOptionSelect={setSelectedShipping}
-        />
+        <div id="shipping-calculator">
+          <ShippingCalculator
+            productId={productId}
+            quantity={1}
+            selectedOptionId={selectedShipping?.id ?? null}
+            onOptionSelect={setSelectedShipping}
+          />
+        </div>
 
         {/* Logistics block */}
         {logisticsConfig && (
