@@ -1,10 +1,15 @@
 "use server";
 
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, exists } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { db } from "@/db";
-import { productReviewTable } from "@/db/schema";
+import {
+  orderItemTable,
+  orderTable,
+  productReviewTable,
+  productVariantTable,
+} from "@/db/schema";
 
 export type ReviewWithUser = {
   id: string;
@@ -132,4 +137,59 @@ export async function getUserReviewForProduct(
   });
 
   return row ?? null;
+}
+
+export async function hasUserReviewedProduct(
+  userId: string,
+  productId: string,
+): Promise<boolean> {
+  noStore();
+
+  const row = await db.query.productReviewTable.findFirst({
+    where: and(
+      eq(productReviewTable.userId, userId),
+      eq(productReviewTable.productId, productId),
+    ),
+    columns: { id: true },
+  });
+
+  return !!row;
+}
+
+export async function canUserReviewProduct(
+  userId: string,
+  productId: string,
+): Promise<boolean> {
+  noStore();
+
+  const alreadyReviewed = await hasUserReviewedProduct(userId, productId);
+  if (alreadyReviewed) return false;
+
+  const [deliveredOrderWithProduct] = await db
+    .select({ id: orderTable.id })
+    .from(orderTable)
+    .where(
+      and(
+        eq(orderTable.userId, userId),
+        eq(orderTable.status, "delivered"),
+        exists(
+          db
+            .select({ one: orderItemTable.id })
+            .from(orderItemTable)
+            .innerJoin(
+              productVariantTable,
+              eq(orderItemTable.productVariantId, productVariantTable.id),
+            )
+            .where(
+              and(
+                eq(orderItemTable.orderId, orderTable.id),
+                eq(productVariantTable.productId, productId),
+              ),
+            ),
+        ),
+      ),
+    )
+    .limit(1);
+
+  return !!deliveredOrderWithProduct;
 }

@@ -5,12 +5,13 @@ import {
   CheckCircleIcon,
   ClockIcon,
   ExternalLinkIcon,
+  PackageIcon,
   XCircleIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useTransition } from "react";
 import { useState } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 
 import { cancelReturnRequest } from "@/actions/cancel-return-request";
@@ -20,12 +21,18 @@ import type { OrderWithItems } from "@/lib/queries/orders";
 
 import { OrderTimeline } from "./order-timeline";
 import { ReturnRequestDialog } from "./return-request-dialog";
+import { ReviewButton } from "./review-button";
+import { TrackingTimeline } from "./tracking-timeline";
 
-type Props = { order: OrderWithItems };
+type Props = {
+  order: OrderWithItems;
+  reviewedProductIds?: string[];
+};
 
-export function OrderCard({ order }: Props) {
+export function OrderCard({ order, reviewedProductIds = [] }: Props) {
   const shortId = order.id.slice(0, 8).toUpperCase();
   const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [trackingExpanded, setTrackingExpanded] = useState(false);
   const [isPending, startTransition] = useTransition();
   const queryClient = useQueryClient();
 
@@ -45,13 +52,15 @@ export function OrderCard({ order }: Props) {
   }
 
   const rr = order.returnRequest;
+  const isDelivered = order.status === "delivered";
+  const hasTracking = Boolean(order.trackingCode);
 
   return (
-    <div className="rounded-2xl border p-4 space-y-4">
+    <div className="space-y-4 rounded-2xl border p-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="font-semibold text-sm">Pedido #{shortId}</p>
+          <p className="text-sm font-semibold">Pedido #{shortId}</p>
           <p className="text-muted-foreground text-xs">
             {order.createdAt.toLocaleDateString("pt-BR")} às{" "}
             {order.createdAt.toLocaleTimeString("pt-BR", {
@@ -60,13 +69,53 @@ export function OrderCard({ order }: Props) {
             })}
           </p>
         </div>
-        <p className="font-bold text-sm shrink-0">
+        <p className="shrink-0 text-sm font-bold">
           {formatCentsToBRL(order.totalPriceInCents)}
         </p>
       </div>
 
       {/* Timeline */}
       <OrderTimeline order={order} />
+
+      {/* Tracking */}
+      {hasTracking && (
+        <div className="rounded-xl border px-3 py-2">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-2 text-sm font-medium"
+            onClick={() => setTrackingExpanded((v) => !v)}
+          >
+            <span className="flex items-center gap-2">
+              <PackageIcon className="size-4 shrink-0" />
+              Rastreamento
+              {order.trackingCode && (
+                <span className="text-muted-foreground font-normal">
+                  {order.trackingCode}
+                </span>
+              )}
+            </span>
+            <span className="text-muted-foreground text-xs">
+              {trackingExpanded ? "Ocultar" : "Ver"}
+            </span>
+          </button>
+
+          {trackingExpanded && order.trackingCode && (
+            <TrackingTimeline trackingCode={order.trackingCode} />
+          )}
+
+          {order.trackingUrl && (
+            <Link
+              href={order.trackingUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex items-center gap-1 text-xs underline underline-offset-2 hover:no-underline"
+            >
+              Rastrear no site dos Correios
+              <ExternalLinkIcon className="size-3" />
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Items */}
       <div className="space-y-3">
@@ -86,15 +135,24 @@ export function OrderCard({ order }: Props) {
                 {item.variant.color} · {item.variant.size} · {item.quantity}x
               </p>
             </div>
-            <p className="shrink-0 text-sm font-medium">
-              {formatCentsToBRL(item.priceInCents * item.quantity)}
-            </p>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              <p className="text-sm font-medium">
+                {formatCentsToBRL(item.priceInCents * item.quantity)}
+              </p>
+              {isDelivered && (
+                <ReviewButton
+                  productId={item.product.id}
+                  productName={item.product.name}
+                  hasReviewed={reviewedProductIds.includes(item.product.id)}
+                />
+              )}
+            </div>
           </div>
         ))}
       </div>
 
       {/* Return request section */}
-      {order.status === "delivered" && !rr && (
+      {isDelivered && !rr && (
         <div className="pt-1">
           <Button
             variant="outline"
@@ -108,7 +166,7 @@ export function OrderCard({ order }: Props) {
       )}
 
       {rr?.status === "pending_review" && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 space-y-1">
+        <div className="space-y-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-medium text-amber-700">
             <ClockIcon className="size-4 shrink-0" />
             Devolução em análise
@@ -128,7 +186,7 @@ export function OrderCard({ order }: Props) {
       )}
 
       {rr?.status === "approved" && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 space-y-2">
+        <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-medium text-emerald-700">
             <CheckCircleIcon className="size-4 shrink-0" />
             Devolução aprovada
@@ -157,7 +215,7 @@ export function OrderCard({ order }: Props) {
       )}
 
       {rr?.status === "rejected" && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 space-y-1">
+        <div className="space-y-1 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
           <div className="flex items-center gap-2 text-sm font-medium text-destructive">
             <XCircleIcon className="size-4 shrink-0" />
             Devolução não aprovada
@@ -179,7 +237,7 @@ export function OrderCard({ order }: Props) {
 
       {/* Footer link */}
       <Link
-        href={`/my-orders`}
+        href="/account/orders"
         className="text-primary flex items-center text-xs hover:underline"
       >
         Ver histórico completo →

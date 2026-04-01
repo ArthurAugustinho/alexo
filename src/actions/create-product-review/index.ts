@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { productReviewTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { canUserReviewProduct } from "@/lib/queries/reviews";
 
 import {
   type CreateProductReviewInput,
@@ -32,19 +33,12 @@ export async function createProductReview(
     };
   }
 
-  const existing = await db.query.productReviewTable.findFirst({
-    where: (t, { and, eq }) =>
-      and(
-        eq(t.userId, session.user.id),
-        eq(t.productId, payload.data.productId),
-      ),
-    columns: { id: true },
-  });
+  const eligible = await canUserReviewProduct(session.user.id, payload.data.productId);
 
-  if (existing) {
+  if (!eligible) {
     return {
       success: false,
-      message: "Você já avaliou este produto.",
+      message: "Você precisa ter recebido este produto para avaliá-lo.",
     };
   }
 

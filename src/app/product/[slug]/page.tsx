@@ -11,7 +11,6 @@ import { getProductBySlug } from "@/lib/queries/products";
 import {
   getApprovedReviewsByProduct,
   getReviewStats,
-  getUserReviewForProduct,
 } from "@/lib/queries/reviews";
 import { getSizeChartByCategory } from "@/lib/queries/size-charts";
 import { isProductInWishlist } from "@/lib/queries/wishlist";
@@ -93,7 +92,7 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     return notFound();
   }
 
-  const [isWishlisted, sizeChartData, reviews, reviewStats, logisticsConfig, hasAlreadyReviewed] =
+  const [isWishlisted, sizeChartData, reviews, reviewStats, logisticsConfig] =
     await Promise.all([
       session?.user.id
         ? isProductInWishlist(session.user.id, product.id)
@@ -102,9 +101,6 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
       getApprovedReviewsByProduct(product.id),
       getReviewStats(product.id),
       getLogisticsConfig(),
-      session?.user.id
-        ? getUserReviewForProduct(session.user.id, product.id)
-        : Promise.resolve(null),
     ]);
 
   return (
@@ -127,8 +123,6 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
           variants={product.variants}
           reviews={reviews}
           reviewStats={reviewStats}
-          isLoggedIn={Boolean(session?.user.id)}
-          hasAlreadyReviewed={Boolean(hasAlreadyReviewed)}
           logisticsConfig={logisticsConfig}
           deliveryDaysMin={product.deliveryDaysMin}
           deliveryDaysMax={product.deliveryDaysMax}

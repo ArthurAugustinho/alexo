@@ -41,8 +41,6 @@ type ProductDetailsClientProps = {
   variants: ProductVariantModel[];
   reviews: ReviewWithUser[];
   reviewStats: ReviewStats;
-  isLoggedIn: boolean;
-  hasAlreadyReviewed: boolean;
   logisticsConfig: LogisticsConfig | null;
   deliveryDaysMin?: number | null;
   deliveryDaysMax?: number | null;
@@ -64,8 +62,6 @@ const ProductDetailsClient = ({
   variants,
   reviews,
   reviewStats,
-  isLoggedIn,
-  hasAlreadyReviewed,
   logisticsConfig,
   deliveryDaysMin,
   deliveryDaysMax,
@@ -214,11 +210,8 @@ const ProductDetailsClient = ({
       {/* Reviews — full width below the 2-column grid */}
       <div className="col-span-full mt-8 border-t px-5 pt-8 lg:px-0">
         <ReviewSection
-          productId={productId}
           reviews={reviews}
           stats={reviewStats}
-          isLoggedIn={isLoggedIn}
-          hasAlreadyReviewed={hasAlreadyReviewed}
         />
       </div>
     </div>

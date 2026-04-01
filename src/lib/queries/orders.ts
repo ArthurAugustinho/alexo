@@ -16,6 +16,7 @@ export type OrderItemWithProduct = {
     imageUrl: string;
   };
   product: {
+    id: string;
     name: string;
     slug: string;
   };
@@ -92,7 +93,7 @@ function mapItems(
       color: string;
       size: string;
       imageUrl: string;
-      product: { name: string; slug: string };
+      product: { id: string; name: string; slug: string };
     };
   }>,
 ): OrderItemWithProduct[] {
@@ -106,6 +107,7 @@ function mapItems(
       imageUrl: item.productVariant.imageUrl,
     },
     product: {
+      id: item.productVariant.product.id,
       name: item.productVariant.product.name,
       slug: item.productVariant.product.slug,
     },
@@ -124,7 +126,7 @@ export async function getOrdersByUser(
       items: {
         with: {
           productVariant: {
-            with: { product: { columns: { name: true, slug: true } } },
+            with: { product: { columns: { id: true, name: true, slug: true } } },
           },
         },
       },
@@ -171,7 +173,7 @@ export async function getOrderById(
       items: {
         with: {
           productVariant: {
-            with: { product: { columns: { name: true, slug: true } } },
+            with: { product: { columns: { id: true, name: true, slug: true } } },
           },
         },
       },
@@ -218,7 +220,7 @@ export async function getAllOrdersForAdmin(): Promise<AdminOrderRow[]> {
       items: {
         with: {
           productVariant: {
-            with: { product: { columns: { name: true, slug: true } } },
+            with: { product: { columns: { id: true, name: true, slug: true } } },
           },
         },
       },

@@ -40,7 +40,7 @@ export function CheckoutSuccessDialog({ orderId, imageUrl }: CheckoutSuccessDial
 
         <DialogFooter>
           <Button className="rounded-full" size="lg" asChild>
-            <Link href="/my-orders">Ver meus pedidos</Link>
+            <Link href="/account/orders">Ver meus pedidos</Link>
           </Button>
           <Button
             className="rounded-full"
