@@ -46,7 +46,7 @@ type ProfileSheetProps = {
   userId: string;
 };
 
-function PersonalDataTab({ userId }: { userId: string }) {
+export function PersonalDataTab({ userId }: { userId: string }) {
   const { data: profile, isLoading } = useProfile(userId);
   const updateProfile = useUpdateProfile();
   const updateAvatar = useUpdateAvatar();
@@ -228,7 +228,7 @@ function PersonalDataTab({ userId }: { userId: string }) {
   );
 }
 
-function SecurityTab({ userId }: { userId: string }) {
+export function SecurityTab({ userId }: { userId: string }) {
   const { data: profile, isLoading } = useProfile(userId);
   const changePassword = useChangePassword();
 
@@ -332,7 +332,7 @@ function SecurityTab({ userId }: { userId: string }) {
   );
 }
 
-function PreferencesTab({ userId }: { userId: string }) {
+export function PreferencesTab({ userId }: { userId: string }) {
   const { data: profile, isLoading } = useProfile(userId);
   const updateProfile = useUpdateProfile();
   const [emailMarketing, setEmailMarketing] = useState<boolean | null>(null);

@@ -22,10 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "../ui/sheet";
-import { AddressesSheet } from "./addresses-sheet";
 import { Cart } from "./cart";
-import { OrdersSheet } from "./orders-sheet";
-import { ProfileSheet } from "./profile-sheet";
 import { SearchBar } from "./search-bar";
 import { SearchModal } from "./search-modal";
 
@@ -33,9 +30,6 @@ export const Header = () => {
   const router = useRouter();
   const { data: session } = authClient.useSession();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [isOrdersOpen, setIsOrdersOpen] = useState(false);
-  const [isAddressesOpen, setIsAddressesOpen] = useState(false);
   const { data: wishlistProductIds = [] } = useQuery({
     queryKey: ["wishlist-product-ids", session?.user?.id],
     queryFn: () => getWishlistProductIdsForCurrentUser(),
@@ -58,17 +52,17 @@ export const Header = () => {
 
   function handleOpenProfile() {
     setIsMenuOpen(false);
-    setIsProfileOpen(true);
+    router.push("/account/profile");
   }
 
   function handleOpenOrders() {
     setIsMenuOpen(false);
-    setIsOrdersOpen(true);
+    router.push("/account/orders");
   }
 
   function handleOpenAddresses() {
     setIsMenuOpen(false);
-    setIsAddressesOpen(true);
+    router.push("/account/addresses");
   }
 
   return (
@@ -207,29 +201,6 @@ export const Header = () => {
         <Cart isAuthenticated={Boolean(session?.user)} />
       </div>
 
-      {session?.user?.id && (
-        <ProfileSheet
-          open={isProfileOpen}
-          onOpenChange={setIsProfileOpen}
-          userId={session.user.id}
-        />
-      )}
-
-      {session?.user?.id && (
-        <OrdersSheet
-          open={isOrdersOpen}
-          onOpenChange={setIsOrdersOpen}
-          userId={session.user.id}
-        />
-      )}
-
-      {session?.user?.id && (
-        <AddressesSheet
-          open={isAddressesOpen}
-          onOpenChange={setIsAddressesOpen}
-          userId={session.user.id}
-        />
-      )}
     </header>
   );
 };
