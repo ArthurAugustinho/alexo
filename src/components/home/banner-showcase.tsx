@@ -5,7 +5,7 @@ export async function BannerShowcase() {
   const banners = await getActiveSeasonalBanners();
 
   return (
-    <div className="px-5">
+    <div className="w-full overflow-hidden">
       <BannerCarousel banners={banners} />
     </div>
   );

@@ -1,4 +1,4 @@
-import { BellIcon, ImageIcon, LayoutGridIcon, LayoutTemplateIcon, SparklesIcon, StoreIcon } from "lucide-react";
+import { BellIcon, GalleryHorizontalEndIcon, GridIcon, ImageIcon, LayoutGridIcon, LayoutTemplateIcon, SparklesIcon, StoreIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -81,6 +81,18 @@ export default async function AdminStorefrontLayout({
                 <Link href="/admin/vitrine/destaques">
                   <LayoutGridIcon />
                   Destaques
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl">
+                <Link href="/admin/vitrine/banner-simples">
+                  <GalleryHorizontalEndIcon />
+                  Banner simples
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl">
+                <Link href="/admin/vitrine/grade-imagens">
+                  <GridIcon />
+                  Grade imagens
                 </Link>
               </Button>
               <Button asChild variant="ghost" className="rounded-xl">

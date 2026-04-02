@@ -69,7 +69,7 @@ export function BannerCarousel({
 
   return (
     <section role="region" aria-label={ariaLabel} className="space-y-4">
-      <div className="border-border/70 bg-background relative overflow-hidden rounded-[32px] border shadow-sm">
+      <div className="relative overflow-hidden">
         <div
           className="flex transition-transform duration-700 ease-out"
           style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
@@ -85,7 +85,7 @@ export function BannerCarousel({
                 rel={isExternalLink ? "noreferrer" : undefined}
                 className="relative block min-w-full"
               >
-                <div className="relative aspect-[4/3] md:aspect-[16/9]">
+                <div className="relative h-[420px] md:h-[480px]">
                   <Image
                     src={banner.imageUrl}
                     alt={`${banner.title} — ${banner.subtitle}`}

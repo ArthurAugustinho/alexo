@@ -884,3 +884,36 @@ export const returnRequestRelations = relations(
     }),
   }),
 );
+
+export const simpleBannerTable = pgTable("simple_banners", {
+  id: uuid().primaryKey().defaultRandom(),
+  imageUrl: varchar("image_url", { length: 500 }).notNull(),
+  linkUrl: varchar("link_url", { length: 500 }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const tripleImageGridItemTable = pgTable(
+  "triple_image_grid_items",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    imageUrl: varchar("image_url", { length: 500 }).notNull(),
+    linkUrl: varchar("link_url", { length: 500 }),
+    position: integer("position").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("triple_image_grid_items_position_unique").on(table.position),
+    index("triple_image_grid_items_active_position_idx").on(
+      table.isActive,
+      table.position,
+    ),
+    check(
+      "triple_image_grid_items_position_check",
+      sql`${table.position} >= 1 AND ${table.position} <= 3`,
+    ),
+  ],
+);

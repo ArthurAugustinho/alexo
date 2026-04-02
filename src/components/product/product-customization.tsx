@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { type PatchOption } from "@/db/schema";
 import { formatCentsToBRL } from "@/helpers/money";
 
@@ -69,15 +69,17 @@ export function ProductCustomization({
       >
         <span className="flex items-center gap-2">
           Personalize
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <HelpCircleIcon className="text-muted-foreground size-4" />
-            </TooltipTrigger>
-            <TooltipContent>
-              Produtos personalizados têm prazo adicional de {leadDays} dia
-              {leadDays !== 1 ? "s" : ""}.
-            </TooltipContent>
-          </Tooltip>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircleIcon className="text-muted-foreground size-4" />
+              </TooltipTrigger>
+              <TooltipContent>
+                Produtos personalizados têm prazo adicional de {leadDays} dia
+                {leadDays !== 1 ? "s" : ""}.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <span className="text-muted-foreground font-normal">
             (+{leadDays} dia{leadDays !== 1 ? "s" : ""})
           </span>

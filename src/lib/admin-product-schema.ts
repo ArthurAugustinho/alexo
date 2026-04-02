@@ -29,16 +29,19 @@ const optionalPositiveIntegerSchema = z.preprocess(
     .nullable(),
 );
 
-const originPostalCodeSchema = z
-  .string()
-  .transform((value) => value.replace(/\D/g, ""))
-  .pipe(
-    z.union([
-      z.string().regex(/^\d{8}$/, "CEP deve conter 8 digitos"),
-      z.literal(""),
-    ]),
-  )
-  .transform((value) => (value === "" ? undefined : value));
+const originPostalCodeSchema = z.preprocess(
+  (value) => (value === null || value === undefined ? "" : value),
+  z
+    .string()
+    .transform((value) => value.replace(/\D/g, ""))
+    .pipe(
+      z.union([
+        z.string().regex(/^\d{8}$/, "CEP deve conter 8 digitos"),
+        z.literal(""),
+      ]),
+    )
+    .transform((value) => (value === "" ? undefined : value)),
+);
 
 const adminProductVariantStockSchema = z.object({
   variantId: z.uuid("Variante invalida.").nullable(),

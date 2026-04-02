@@ -133,6 +133,17 @@ export async function getSaleProducts(
   return normalizeForCarousel(products);
 }
 
+export async function getOnSaleProducts(): Promise<CarouselProduct[]> {
+  const products = await db.query.productTable.findMany({
+    where: eq(productTable.isOnSale, true),
+    with: { variants: true },
+    orderBy: [sql`${productTable.discountPercent} DESC NULLS LAST`],
+    limit: 12,
+  });
+
+  return normalizeForCarousel(products);
+}
+
 export async function getProductById(productId: string) {
   const product = await db.query.productTable.findFirst({
     where: eq(productTable.id, productId),

@@ -13,7 +13,7 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
     <section className="px-5">
       <h2 className="mb-4 text-sm font-medium">Marcas parceiras</h2>
 
-      <div className="scrollbar-hide flex flex-nowrap gap-3 overflow-x-auto md:grid md:grid-cols-[repeat(auto-fill,minmax(110px,1fr))] md:overflow-visible">
+      <div className="scrollbar-hide flex flex-nowrap gap-3 overflow-x-auto md:flex-wrap md:justify-center md:overflow-visible">
         {brands.map((brand) => {
           const card = (
             <div className="flex h-[90px] w-[110px] shrink-0 flex-col items-center justify-center gap-2 rounded-lg border p-3 transition-colors hover:bg-muted/40 md:w-auto">
