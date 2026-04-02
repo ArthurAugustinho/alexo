@@ -73,15 +73,7 @@ const Home = async () => {
       {/* 8. Feature Highlight — tríade (edge-to-edge) */}
       <FeatureHighlight cards={highlightCards} />
 
-      <div className="space-y-12 py-6 md:space-y-16">
-        {/* 9. Mais vendidos (segunda instância) */}
-        <Suspense fallback={<ProductCarouselSkeleton title="Mais vendidos" />}>
-          <BestSellersSection />
-        </Suspense>
-
-        {/* 10. Espaço estratégico */}
-        <div className="py-12" />
-      </div>
+      <div className="py-12" />
     </>
   );
 };
