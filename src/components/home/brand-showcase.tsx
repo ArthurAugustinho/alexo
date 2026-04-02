@@ -16,17 +16,17 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
       <div className="scrollbar-hide flex flex-nowrap gap-4 overflow-x-auto md:flex-wrap md:justify-center md:overflow-visible">
         {brands.map((brand) => {
           const card = (
-            <div className="flex h-[100px] w-[120px] shrink-0 flex-col items-center justify-center gap-2 rounded-lg border p-4 transition-colors hover:bg-muted/40 md:w-auto">
-              <div className="relative h-12 w-full">
+            <div className="shrink-0 flex flex-col items-center rounded-lg border bg-white p-3 transition-colors hover:bg-muted/40">
+              <div className="relative h-[60px] w-[150px]">
                 <Image
                   src={brand.logoUrl}
                   alt={brand.name}
                   fill
                   className="object-contain grayscale transition-all duration-300 hover:grayscale-0"
-                  sizes="120px"
+                  sizes="150px"
                 />
               </div>
-              <span className="text-muted-foreground w-full truncate text-center text-[13px]">
+              <span className="text-muted-foreground mt-2 text-center text-xs">
                 {brand.name}
               </span>
             </div>
@@ -39,18 +39,13 @@ export function BrandShowcase({ brands }: BrandShowcaseProps) {
                 href={brand.linkUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 md:shrink"
               >
                 {card}
               </a>
             );
           }
 
-          return (
-            <div key={brand.id} className="shrink-0 md:shrink">
-              {card}
-            </div>
-          );
+          return <div key={brand.id}>{card}</div>;
         })}
       </div>
     </section>

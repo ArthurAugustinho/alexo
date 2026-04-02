@@ -9,25 +9,25 @@ type SimpleBannerProps = {
 export function SimpleBanner({ banner }: SimpleBannerProps) {
   if (!banner) return null;
 
-  const inner = (
-    <div className="relative h-[80px] w-full md:h-[100px]">
+  const content = (
+    <div className="relative h-[100px] w-full overflow-hidden">
       <Image
         src={banner.imageUrl}
-        alt="Banner"
+        alt="Banner promocional"
         fill
         className="object-cover"
-        sizes="100vw"
+        priority
       />
     </div>
   );
 
   if (banner.linkUrl) {
     return (
-      <a href={banner.linkUrl} className="block w-full overflow-hidden">
-        {inner}
+      <a href={banner.linkUrl} className="block w-full">
+        {content}
       </a>
     );
   }
 
-  return <div className="w-full overflow-hidden">{inner}</div>;
+  return content;
 }
