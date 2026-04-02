@@ -12,7 +12,7 @@ export function TripleImageGrid({ items }: TripleImageGridProps) {
   const slots = items.slice(0, 3);
 
   return (
-    <div className="grid grid-cols-3">
+    <div className="grid grid-cols-3 gap-1">
       {slots.map((item) => {
         const inner = (
           <div className="relative aspect-square overflow-hidden">
