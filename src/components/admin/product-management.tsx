@@ -84,6 +84,19 @@ export type AdminCatalogProduct = {
   lengthCm: number | null;
   deliveryDaysMin: number | null;
   deliveryDaysMax: number | null;
+  // Discount
+  discountPercent: number | null;
+  originalPriceInCents: number | null;
+  badgeLabel: string | null;
+  pixDiscountText: string | null;
+  // Customization
+  isCustomizable: boolean;
+  customizationLeadDays: number;
+  nameFieldEnabled: boolean;
+  nameFieldPriceInCents: number;
+  numberFieldEnabled: boolean;
+  numberFieldPriceInCents: number;
+  patchOptions: Array<{ id: string; label: string; imageUrl: string; priceInCents: number }> | null;
   variantsCount: number;
   variants: Array<{
     id: string;

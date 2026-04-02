@@ -15,6 +15,10 @@ const addProductToCartSchema = z.object({
   shippingServiceName: z.string().max(100).nullable().optional(),
   shippingDaysMin: z.number().int().min(0).nullable().optional(),
   shippingDaysMax: z.number().int().min(0).nullable().optional(),
+  customizationName: z.string().max(30).optional(),
+  customizationNumber: z.string().max(5).optional(),
+  customizationPatchId: z.string().max(100).optional(),
+  customizationExtraInCents: z.number().int().min(0).default(0),
 });
 
 const cartItemIdSchema = z.object({
@@ -116,6 +120,10 @@ export const addProductToCart = async (data: AddProductToCartInput) => {
     shippingServiceName: data.shippingServiceName ?? null,
     shippingDaysMin: data.shippingDaysMin ?? null,
     shippingDaysMax: data.shippingDaysMax ?? null,
+    customizationName: data.customizationName ?? null,
+    customizationNumber: data.customizationNumber ?? null,
+    customizationPatchId: data.customizationPatchId ?? null,
+    customizationExtraInCents: data.customizationExtraInCents ?? 0,
   });
 };
 

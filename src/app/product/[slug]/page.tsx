@@ -3,8 +3,13 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { Header } from "@/components/common/header";
+import { FrequentlyBoughtCarousel } from "@/components/product/frequently-bought-carousel";
+import { ProductBreadcrumb } from "@/components/product/product-breadcrumb";
+import { ProductDescription } from "@/components/product/product-description";
 import ProductDetailsClient from "@/components/product/product-details-client";
-import { RelatedProducts } from "@/components/product/related-products";
+import { RecommendedCarousel } from "@/components/product/recommended-carousel";
+import { ReviewSection } from "@/components/product/review-section";
+import { SaleCarousel } from "@/components/product/sale-carousel";
 import { auth } from "@/lib/auth";
 import { getLogisticsConfig } from "@/lib/queries/logistics";
 import { getProductBySlug } from "@/lib/queries/products";
@@ -107,6 +112,16 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
     <>
       <Header />
       <div className="flex flex-col space-y-10 py-6">
+        {/* Breadcrumb */}
+        <div className="px-5 lg:px-8">
+          <ProductBreadcrumb
+            categoryName={product.category.name}
+            categorySlug={product.category.slug}
+            productName={product.name}
+          />
+        </div>
+
+        {/* Grid principal: galeria + detalhes */}
         <ProductDetailsClient
           categoryName={product.category.name}
           initialVariantSlug={variantSlug}
@@ -121,17 +136,42 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
           sizeType={product.sizeType}
           productSizes={product.productSizes}
           variants={product.variants}
-          reviews={reviews}
           reviewStats={reviewStats}
           logisticsConfig={logisticsConfig}
           deliveryDaysMin={product.deliveryDaysMin}
           deliveryDaysMax={product.deliveryDaysMax}
+          discountPercent={product.discountPercent}
+          originalPriceInCents={product.originalPriceInCents}
+          pixDiscountText={product.pixDiscountText}
+          badgeLabel={product.badgeLabel}
+          isCustomizable={product.isCustomizable ?? false}
+          customizationLeadDays={product.customizationLeadDays ?? 2}
+          nameFieldEnabled={product.nameFieldEnabled ?? false}
+          nameFieldPriceInCents={product.nameFieldPriceInCents ?? 0}
+          numberFieldEnabled={product.numberFieldEnabled ?? false}
+          numberFieldPriceInCents={product.numberFieldPriceInCents ?? 0}
+          patchOptions={product.patchOptions}
         />
 
-        <RelatedProducts
+        {/* Descrição do produto */}
+        <div className="px-5 lg:px-8">
+          <ProductDescription description={product.description} />
+        </div>
+
+        {/* Avaliações */}
+        <div className="px-5 lg:px-8">
+          <ReviewSection reviews={reviews} stats={reviewStats} />
+        </div>
+
+        {/* Carrosséis */}
+        <RecommendedCarousel
           categoryId={product.categoryId}
-          excludeProductId={product.id}
+          currentProductId={product.id}
         />
+        <FrequentlyBoughtCarousel currentProductId={product.id} />
+        <SaleCarousel currentProductId={product.id} />
+
+        <div className="py-8" />
       </div>
     </>
   );

@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import { StarRating } from "@/components/ui/star-rating";
+import type { PatchOption } from "@/db/schema";
 import { formatCentsToBRL } from "@/helpers/money";
 import { useVariantSelector } from "@/hooks/use-variant-selector";
 import {
@@ -11,15 +14,15 @@ import {
   type ProductVariantModel,
 } from "@/lib/product-variant-schema";
 import type { LogisticsConfig } from "@/lib/queries/logistics";
-import type { ReviewStats, ReviewWithUser } from "@/lib/queries/reviews";
+import type { ReviewStats } from "@/lib/queries/reviews";
 import { type ShippingOption } from "@/lib/shipping-schema";
 import type { SizeChartRange } from "@/lib/size-chart-schema";
 
 import { ShippingCalculator } from "../shipping/shipping-calculator";
 import { LogisticsBlock } from "./logistics-block";
 import ProductActions from "./product-actions";
+import { type CustomizationData,ProductCustomization } from "./product-customization";
 import { ProductGallery } from "./product-gallery";
-import { ReviewSection } from "./review-section";
 import { SizeRecommenderModal } from "./size-recommender-modal";
 import VariantSelector from "./variant-selector";
 import { VerifiedBadge } from "./verified-badge";
@@ -39,11 +42,23 @@ type ProductDetailsClientProps = {
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
   variants: ProductVariantModel[];
-  reviews: ReviewWithUser[];
   reviewStats: ReviewStats;
   logisticsConfig: LogisticsConfig | null;
   deliveryDaysMin?: number | null;
   deliveryDaysMax?: number | null;
+  // Discount
+  discountPercent?: number | null;
+  originalPriceInCents?: number | null;
+  pixDiscountText?: string | null;
+  badgeLabel?: string | null;
+  // Customization
+  isCustomizable?: boolean;
+  customizationLeadDays?: number;
+  nameFieldEnabled?: boolean;
+  nameFieldPriceInCents?: number;
+  numberFieldEnabled?: boolean;
+  numberFieldPriceInCents?: number;
+  patchOptions?: PatchOption[] | null;
 };
 
 const ProductDetailsClient = ({
@@ -51,7 +66,7 @@ const ProductDetailsClient = ({
   initialVariantSlug,
   initialIsWishlisted,
   productId,
-  productDescription,
+  productDescription: _productDescription,
   productName,
   productBrand,
   isVerified,
@@ -60,14 +75,25 @@ const ProductDetailsClient = ({
   sizeType,
   productSizes,
   variants,
-  reviews,
   reviewStats,
   logisticsConfig,
   deliveryDaysMin,
   deliveryDaysMax,
+  discountPercent,
+  originalPriceInCents,
+  pixDiscountText,
+  badgeLabel,
+  isCustomizable = false,
+  customizationLeadDays = 2,
+  nameFieldEnabled = false,
+  nameFieldPriceInCents = 0,
+  numberFieldEnabled = false,
+  numberFieldPriceInCents = 0,
+  patchOptions,
 }: ProductDetailsClientProps) => {
   const [selectedShipping, setSelectedShipping] =
     useState<ShippingOption | null>(null);
+  const [customizationExtra, setCustomizationExtra] = useState(0);
 
   const {
     allSizesForColor,
@@ -87,10 +113,10 @@ const ProductDetailsClient = ({
   });
 
   const fallbackVariant = getPreferredVariant(variants);
-  const displayedPriceInCents =
+  const basePrice =
     selectedVariant?.priceInCents ?? fallbackVariant?.priceInCents ?? 0;
+  const displayedPriceInCents = basePrice + customizationExtra;
 
-  // Deduplicated list of unique variant images (one per color)
   const allImages = useMemo(() => {
     const seen = new Set<string>();
     const result: string[] = [];
@@ -103,18 +129,67 @@ const ProductDetailsClient = ({
     return result;
   }, [variants]);
 
+  const handleCustomizationChange = useCallback(
+    (data: CustomizationData) => {
+      setCustomizationExtra(data.totalExtraInCents);
+    },
+    [],
+  );
+
+  const patches = patchOptions ?? [];
+  const nameField = nameFieldEnabled
+    ? { enabled: true, priceInCents: nameFieldPriceInCents }
+    : null;
+  const numberField = numberFieldEnabled
+    ? { enabled: true, priceInCents: numberFieldPriceInCents }
+    : null;
+
+  const skuCode = `#${productId.slice(0, 8).toUpperCase()}`;
+
   return (
-    <div className="lg:grid lg:grid-cols-[1fr_380px] lg:gap-8 lg:px-8">
-      {/* Gallery: occupies the first column on desktop, full-width on mobile */}
-      <ProductGallery
-        images={allImages}
-        videoUrl={videoUrl}
-        productName={productName}
-        activeImageUrl={displayImageUrl}
-      />
+    <div className="lg:grid lg:grid-cols-[1fr_1fr] lg:gap-8 lg:px-8">
+      {/* Gallery column — sticky on desktop */}
+      <div className="lg:self-start lg:sticky lg:top-4">
+        <ProductGallery
+          images={allImages}
+          videoUrl={videoUrl}
+          productName={productName}
+          activeImageUrl={displayImageUrl}
+        />
+      </div>
 
       {/* Info panel */}
-      <div className="mt-6 space-y-5 px-5 lg:mt-0 lg:px-0">
+      <div className="mt-6 space-y-4 px-5 lg:mt-0 lg:px-0">
+        {/* Badges */}
+        {(discountPercent || badgeLabel || isCustomizable) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {discountPercent && (
+              <Badge className="bg-primary text-primary-foreground">
+                -{discountPercent}% OFF
+              </Badge>
+            )}
+            {badgeLabel && (
+              <Badge variant="outline" className="font-semibold uppercase">
+                {badgeLabel}
+              </Badge>
+            )}
+            {isCustomizable && (
+              <Badge variant="secondary">PERSONALIZE</Badge>
+            )}
+          </div>
+        )}
+
+        {/* Star rating */}
+        {reviewStats.total > 0 && (
+          <div className="flex items-center gap-2">
+            <StarRating value={Math.round(reviewStats.average)} size="sm" />
+            <span className="text-muted-foreground text-sm">
+              ({reviewStats.total}{" "}
+              {reviewStats.total === 1 ? "avaliação" : "avaliações"})
+            </span>
+          </div>
+        )}
+
         {/* Name & brand */}
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">{productName}</h1>
@@ -125,10 +200,20 @@ const ProductDetailsClient = ({
         </div>
 
         {/* Price + Wishlist */}
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-2xl font-bold">
-            {formatCentsToBRL(displayedPriceInCents)}
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-0.5">
+            {originalPriceInCents && (
+              <p className="text-muted-foreground text-sm line-through">
+                {formatCentsToBRL(originalPriceInCents)}
+              </p>
+            )}
+            <p className="text-2xl font-bold">
+              {formatCentsToBRL(displayedPriceInCents)}
+            </p>
+            {pixDiscountText && (
+              <p className="text-muted-foreground text-xs">{pixDiscountText}</p>
+            )}
+          </div>
           <WishlistButton
             productId={productId}
             initialIsWishlisted={initialIsWishlisted}
@@ -159,8 +244,21 @@ const ProductDetailsClient = ({
           <p className="text-muted-foreground text-sm">
             {selectedColor && selectedSize
               ? `${selectedColor} — ${selectedSize}`
-              : selectedColor ?? selectedSize}
+              : (selectedColor ?? selectedSize)}
           </p>
+        )}
+
+        {/* Customization */}
+        {isCustomizable && (
+          <ProductCustomization
+            isCustomizable={isCustomizable}
+            leadDays={customizationLeadDays}
+            nameField={nameField}
+            numberField={numberField}
+            patches={patches}
+            basePriceInCents={basePrice}
+            onChange={handleCustomizationChange}
+          />
         )}
 
         {/* Quantity + Add to cart + Buy now */}
@@ -169,13 +267,6 @@ const ProductDetailsClient = ({
           selectedVariant={selectedVariant}
           selectedShipping={selectedShipping}
         />
-
-        {/* Description */}
-        <div className="border-t pt-4">
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {productDescription}
-          </p>
-        </div>
 
         {/* Delivery time */}
         {(deliveryDaysMin != null || deliveryDaysMax != null) && (
@@ -205,14 +296,12 @@ const ProductDetailsClient = ({
             priceInCents={displayedPriceInCents}
           />
         )}
-      </div>
 
-      {/* Reviews — full width below the 2-column grid */}
-      <div className="col-span-full mt-8 border-t px-5 pt-8 lg:px-0">
-        <ReviewSection
-          reviews={reviews}
-          stats={reviewStats}
-        />
+        {/* SKU */}
+        <p className="text-muted-foreground text-xs">
+          Código:{" "}
+          <span className="font-mono">{skuCode}</span>
+        </p>
       </div>
     </div>
   );

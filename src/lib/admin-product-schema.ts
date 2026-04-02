@@ -5,6 +5,15 @@ import {
   productVariantSizeSchema,
 } from "./product-variant-schema";
 
+export const adminPatchOptionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().trim().min(1, "Informe o label do patch.").max(100),
+  imageUrl: z.string().url("Informe uma URL de imagem válida."),
+  priceInCents: z.number().int().min(0, "O valor não pode ser negativo."),
+});
+
+export type AdminPatchOption = z.infer<typeof adminPatchOptionSchema>;
+
 const optionalPositiveIntegerSchema = z.preprocess(
   (value) => {
     if (value === "" || value === null || value === undefined) {
@@ -98,6 +107,38 @@ export const adminProductSchema = z
     sizeType: productSizeTypeSchema,
     productSizes: z.array(productVariantSizeSchema).default([]),
     variantStocks: z.array(adminProductVariantStockSchema).default([]),
+    // Discount & promotion
+    discountPercent: z.coerce
+      .number()
+      .int()
+      .min(1, "Desconto mínimo é 1%.")
+      .max(99, "Desconto máximo é 99%.")
+      .nullable()
+      .optional(),
+    badgeLabel: z.string().trim().max(20, "Máximo 20 caracteres.").optional(),
+    pixDiscountText: z
+      .string()
+      .trim()
+      .max(255, "Máximo 255 caracteres.")
+      .optional(),
+    // Customization
+    isCustomizable: z.boolean().default(false),
+    customizationLeadDays: z.coerce
+      .number()
+      .int()
+      .min(0, "O prazo não pode ser negativo.")
+      .default(2),
+    nameFieldEnabled: z.boolean().default(false),
+    nameFieldPriceInReais: z.coerce
+      .number()
+      .min(0, "O valor não pode ser negativo.")
+      .default(0),
+    numberFieldEnabled: z.boolean().default(false),
+    numberFieldPriceInReais: z.coerce
+      .number()
+      .min(0, "O valor não pode ser negativo.")
+      .default(0),
+    patches: z.array(adminPatchOptionSchema).default([]),
   })
   .superRefine((value, ctx) => {
     if (value.sizeType !== "numeric") {

@@ -183,7 +183,7 @@ export function ProductGallery({
       {/* Desktop layout: thumbnails column + main image */}
       <div className="hidden lg:flex lg:gap-3">
         {/* Thumbnails */}
-        <div className="flex w-[72px] shrink-0 flex-col gap-2 overflow-y-auto">
+        <div className="flex w-[80px] shrink-0 flex-col gap-2 overflow-y-auto">
           {items.map((item, index) => {
             const thumbnailUrl =
               item.type === "image"
@@ -206,7 +206,7 @@ export function ProductGallery({
                   src={thumbnailUrl}
                   alt={`${productName} — miniatura ${index + 1}`}
                   fill
-                  sizes="72px"
+                  sizes="80px"
                   className="object-cover"
                 />
                 {item.type === "video" && (
@@ -228,7 +228,7 @@ export function ProductGallery({
         {/* Main image */}
         <div
           ref={mainImageRef}
-          className="group relative flex-1 cursor-zoom-in overflow-hidden rounded-2xl bg-muted"
+          className="group relative flex-1 aspect-[4/5] max-h-[600px] cursor-zoom-in overflow-hidden rounded-2xl bg-gray-50"
           onMouseEnter={() => setIsZooming(true)}
           onMouseLeave={() => setIsZooming(false)}
           onMouseMove={handleMouseMove}
@@ -267,7 +267,7 @@ export function ProductGallery({
               fill
               priority
               sizes="(max-width: 1280px) 60vw, 500px"
-              className={`object-cover transition-transform duration-200 ${
+              className={`object-contain transition-transform duration-200 ${
                 isZooming ? "scale-[2]" : "scale-100"
               }`}
               style={isZooming ? zoomStyle : undefined}

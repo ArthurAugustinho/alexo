@@ -1,11 +1,11 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, TrashIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useTransition } from "react";
 import { type Resolver, useFieldArray, useForm, useWatch } from "react-hook-form";
-import { PatternFormat } from "react-number-format";
+import { NumericFormat, PatternFormat } from "react-number-format";
 import { toast } from "sonner";
 
 import { createAdminProduct, updateAdminProduct } from "@/lib/actions/products";
@@ -24,6 +24,7 @@ import { formatPostalCode } from "@/lib/shipping-schema";
 
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { Checkbox } from "../ui/checkbox";
 import {
   Form,
   FormControl,
@@ -35,6 +36,7 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { Separator } from "../ui/separator";
 import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 
@@ -79,6 +81,19 @@ type ProductFormProduct = {
     size: string;
     stock: number;
   } | null;
+  // Discount
+  discountPercent: number | null;
+  originalPriceInCents: number | null;
+  badgeLabel: string | null;
+  pixDiscountText: string | null;
+  // Customization
+  isCustomizable: boolean;
+  customizationLeadDays: number;
+  nameFieldEnabled: boolean;
+  nameFieldPriceInCents: number;
+  numberFieldEnabled: boolean;
+  numberFieldPriceInCents: number;
+  patchOptions: Array<{ id: string; label: string; imageUrl: string; priceInCents: number }> | null;
 };
 
 type ProductFormVariantStockRow = {
@@ -197,6 +212,18 @@ export function ProductForm({
       primaryVariantId: product?.primaryVariant?.id,
       name: product?.name ?? "",
       brand: product?.brand ?? "",
+      discountPercent: product?.discountPercent ?? undefined,
+      badgeLabel: product?.badgeLabel ?? "",
+      pixDiscountText: product?.pixDiscountText ?? "",
+      isCustomizable: product?.isCustomizable ?? false,
+      customizationLeadDays: product?.customizationLeadDays ?? 2,
+      nameFieldEnabled: product?.nameFieldEnabled ?? false,
+      nameFieldPriceInReais: product ? product.nameFieldPriceInCents / 100 : 0,
+      numberFieldEnabled: product?.numberFieldEnabled ?? false,
+      numberFieldPriceInReais: product
+        ? product.numberFieldPriceInCents / 100
+        : 0,
+      patches: product?.patchOptions ?? [],
       originPostalCode: formatPostalCode(product?.originPostalCode ?? ""),
       description: product?.description ?? "",
       categoryId: product?.categoryId ?? categories[0]?.id ?? "",
@@ -204,7 +231,8 @@ export function ProductForm({
       variantColor: product?.primaryVariant?.color ?? "",
       variantStock: product?.primaryVariant?.stock ?? 0,
       priceInReais: product?.primaryVariant
-        ? product.primaryVariant.priceInCents / 100
+        ? (product.originalPriceInCents ?? product.primaryVariant.priceInCents) /
+          100
         : 0,
       shippingCostInReais: product ? product.shippingCostInCents / 100 : 0,
       weightGrams: product?.weightGrams ?? null,
@@ -237,9 +265,33 @@ export function ProductForm({
     name: "variantStocks",
   });
 
+  const {
+    fields: patchFields,
+    append: appendPatch,
+    remove: removePatch,
+  } = useFieldArray({
+    control: form.control,
+    name: "patches",
+  });
+
   const selectedSizeType = useWatch({
     control: form.control,
     name: "sizeType",
+  });
+
+  const watchedPriceInReais = useWatch({
+    control: form.control,
+    name: "priceInReais",
+  });
+
+  const watchedDiscountPercent = useWatch({
+    control: form.control,
+    name: "discountPercent",
+  });
+
+  const watchedIsCustomizable = useWatch({
+    control: form.control,
+    name: "isCustomizable",
   });
   const selectedProductSizes = useWatch({
     control: form.control,
@@ -1066,6 +1118,389 @@ export function ProductForm({
             </FormItem>
           )}
         />
+
+        {/* ── Promoção ──────────────────────────────────── */}
+        <Separator />
+        <div className="space-y-4">
+          <h3 className="text-base font-semibold">Promoção</h3>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="discountPercent"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Desconto (%)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="99"
+                      step="1"
+                      className="rounded-xl"
+                      placeholder="Ex: 10"
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      disabled={field.disabled}
+                      value={
+                        field.value != null && field.value !== undefined
+                          ? String(field.value)
+                          : ""
+                      }
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value === "" ? null : Number(e.target.value),
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="badgeLabel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Badge (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="rounded-xl"
+                      placeholder="Ex: LANÇAMENTO"
+                      maxLength={20}
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="pixDiscountText"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Texto PIX (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      className="rounded-xl"
+                      placeholder="Ex: Economize 10% via PIX"
+                      maxLength={255}
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {watchedDiscountPercent &&
+            watchedDiscountPercent >= 1 &&
+            watchedPriceInReais > 0 && (
+              <div className="rounded-xl border bg-muted/30 px-4 py-3">
+                <p className="text-sm font-medium text-muted-foreground mb-1">
+                  Preview do preço
+                </p>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-muted-foreground line-through text-sm">
+                    R${" "}
+                    {(watchedPriceInReais).toFixed(2).replace(".", ",")}
+                  </span>
+                  <span className="text-xl font-bold">
+                    R${" "}
+                    {(
+                      watchedPriceInReais *
+                      (1 - watchedDiscountPercent / 100)
+                    )
+                      .toFixed(2)
+                      .replace(".", ",")}
+                  </span>
+                  <Badge className="text-xs">-{watchedDiscountPercent}%</Badge>
+                </div>
+              </div>
+            )}
+        </div>
+
+        {/* ── Personalização ────────────────────────────── */}
+        <Separator />
+        <div className="space-y-4">
+          <h3 className="text-base font-semibold">Personalização</h3>
+
+          <FormField
+            control={form.control}
+            name="isCustomizable"
+            render={({ field }) => (
+              <FormItem className="border-border/60 flex items-center justify-between rounded-xl border px-4 py-3">
+                <div>
+                  <FormLabel className="text-sm font-medium">
+                    Permitir personalização
+                  </FormLabel>
+                  <p className="text-muted-foreground text-xs">
+                    Nome, número e patches selecionáveis pelo cliente
+                  </p>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          {watchedIsCustomizable && (
+            <div className="space-y-4 rounded-2xl border border-dashed p-4">
+              <FormField
+                control={form.control}
+                name="customizationLeadDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prazo adicional (dias)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        className="w-32 rounded-xl"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        disabled={field.disabled}
+                        value={
+                          typeof field.value === "number" ? field.value : ""
+                        }
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === ""
+                              ? 0
+                              : Number(e.target.value),
+                          )
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Name field */}
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="nameFieldEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0 text-sm">
+                        Campo Nome
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="nameFieldPriceInReais"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">
+                        Valor adicional (R$)
+                      </FormLabel>
+                      <FormControl>
+                        <NumericFormat
+                          customInput={Input}
+                          className="w-36 rounded-xl"
+                          prefix="R$ "
+                          decimalSeparator=","
+                          thousandSeparator="."
+                          decimalScale={2}
+                          fixedDecimalScale
+                          value={field.value ?? 0}
+                          onValueChange={(v) =>
+                            field.onChange(v.floatValue ?? 0)
+                          }
+                          onBlur={field.onBlur}
+                          getInputRef={field.ref}
+                          name={field.name}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Number field */}
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="numberFieldEnabled"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center gap-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormLabel className="!mt-0 text-sm">
+                        Campo Número
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="numberFieldPriceInReais"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">
+                        Valor adicional (R$)
+                      </FormLabel>
+                      <FormControl>
+                        <NumericFormat
+                          customInput={Input}
+                          className="w-36 rounded-xl"
+                          prefix="R$ "
+                          decimalSeparator=","
+                          thousandSeparator="."
+                          decimalScale={2}
+                          fixedDecimalScale
+                          value={field.value ?? 0}
+                          onValueChange={(v) =>
+                            field.onChange(v.floatValue ?? 0)
+                          }
+                          onBlur={field.onBlur}
+                          getInputRef={field.ref}
+                          name={field.name}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Patches */}
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Patches / Escudos</p>
+                <div className="space-y-3">
+                  {patchFields.map((patchField, index) => (
+                    <div
+                      key={patchField.id}
+                      className="grid gap-3 rounded-2xl border p-3 md:grid-cols-[1fr_1fr_120px_auto]"
+                    >
+                      <FormField
+                        control={form.control}
+                        name={`patches.${index}.label`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Label</FormLabel>
+                            <FormControl>
+                              <Input
+                                className="rounded-xl"
+                                placeholder="Ex: Escudo São Paulo"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`patches.${index}.imageUrl`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Imagem (URL)</FormLabel>
+                            <FormControl>
+                              <Input
+                                className="rounded-xl"
+                                placeholder="https://..."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name={`patches.${index}.priceInCents`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Valor (R$)</FormLabel>
+                            <FormControl>
+                              <NumericFormat
+                                customInput={Input}
+                                className="rounded-xl"
+                                prefix="R$ "
+                                decimalSeparator=","
+                                thousandSeparator="."
+                                decimalScale={2}
+                                fixedDecimalScale
+                                value={(field.value ?? 0) / 100}
+                                onValueChange={(v) =>
+                                  field.onChange(
+                                    Math.round((v.floatValue ?? 0) * 100),
+                                  )
+                                }
+                                onBlur={field.onBlur}
+                                getInputRef={field.ref}
+                                name={field.name}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => removePatch(index)}
+                        >
+                          <TrashIcon className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() =>
+                    appendPatch({
+                      id: crypto.randomUUID(),
+                      label: "",
+                      imageUrl: "",
+                      priceInCents: 0,
+                    })
+                  }
+                >
+                  + Adicionar patch
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex justify-end gap-3">
           <Button

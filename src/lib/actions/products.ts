@@ -177,6 +177,14 @@ export async function createAdminProduct(
 
   let createdProductId = "";
 
+  const basePriceInCents = Math.round(payload.data.priceInReais * 100);
+  const discountPercent = payload.data.discountPercent ?? null;
+  const originalPriceInCents = discountPercent ? basePriceInCents : null;
+  const finalPriceInCents = discountPercent
+    ? Math.round(basePriceInCents * (1 - discountPercent / 100))
+    : basePriceInCents;
+  const isOnSale = Boolean(discountPercent);
+
   await db.transaction(async (tx) => {
     const [createdProduct] = await tx
       .insert(productTable)
@@ -197,6 +205,29 @@ export async function createAdminProduct(
         lengthCm: payload.data.lengthCm ?? null,
         deliveryDaysMin: payload.data.deliveryDaysMin ?? null,
         deliveryDaysMax: payload.data.deliveryDaysMax ?? null,
+        discountPercent,
+        originalPriceInCents,
+        isOnSale,
+        badgeLabel: payload.data.badgeLabel || null,
+        pixDiscountText: payload.data.pixDiscountText || null,
+        isCustomizable: payload.data.isCustomizable,
+        customizationLeadDays: payload.data.customizationLeadDays,
+        nameFieldEnabled: payload.data.nameFieldEnabled,
+        nameFieldPriceInCents: Math.round(
+          (payload.data.nameFieldPriceInReais ?? 0) * 100,
+        ),
+        numberFieldEnabled: payload.data.numberFieldEnabled,
+        numberFieldPriceInCents: Math.round(
+          (payload.data.numberFieldPriceInReais ?? 0) * 100,
+        ),
+        patchOptions: payload.data.patches?.length
+          ? payload.data.patches.map((p) => ({
+              id: p.id,
+              label: p.label,
+              imageUrl: p.imageUrl,
+              priceInCents: p.priceInCents,
+            }))
+          : null,
       })
       .returning();
 
@@ -218,7 +249,7 @@ export async function createAdminProduct(
       name: payload.data.variantName,
       color: payload.data.variantColor,
       imageUrl: payload.data.imageUrl,
-      priceInCents: Math.round(payload.data.priceInReais * 100),
+      priceInCents: finalPriceInCents,
       slug: variantSlug,
       size: primaryVariantSize,
       stock: payload.data.variantStock,
@@ -307,6 +338,16 @@ export async function updateAdminProduct(
           `${payload.data.name}-${payload.data.variantColor}`,
           primaryVariant?.id,
         );
+  const updateBasePriceInCents = Math.round(payload.data.priceInReais * 100);
+  const updateDiscountPercent = payload.data.discountPercent ?? null;
+  const updateOriginalPriceInCents = updateDiscountPercent
+    ? updateBasePriceInCents
+    : null;
+  const updateFinalPriceInCents = updateDiscountPercent
+    ? Math.round(updateBasePriceInCents * (1 - updateDiscountPercent / 100))
+    : updateBasePriceInCents;
+  const updateIsOnSale = Boolean(updateDiscountPercent);
+
   let updatedVariantsCount = 0;
   let createdVariantsCount = 0;
 
@@ -330,6 +371,29 @@ export async function updateAdminProduct(
         lengthCm: payload.data.lengthCm ?? null,
         deliveryDaysMin: payload.data.deliveryDaysMin ?? null,
         deliveryDaysMax: payload.data.deliveryDaysMax ?? null,
+        discountPercent: updateDiscountPercent,
+        originalPriceInCents: updateOriginalPriceInCents,
+        isOnSale: updateIsOnSale,
+        badgeLabel: payload.data.badgeLabel || null,
+        pixDiscountText: payload.data.pixDiscountText || null,
+        isCustomizable: payload.data.isCustomizable,
+        customizationLeadDays: payload.data.customizationLeadDays,
+        nameFieldEnabled: payload.data.nameFieldEnabled,
+        nameFieldPriceInCents: Math.round(
+          (payload.data.nameFieldPriceInReais ?? 0) * 100,
+        ),
+        numberFieldEnabled: payload.data.numberFieldEnabled,
+        numberFieldPriceInCents: Math.round(
+          (payload.data.numberFieldPriceInReais ?? 0) * 100,
+        ),
+        patchOptions: payload.data.patches?.length
+          ? payload.data.patches.map((p) => ({
+              id: p.id,
+              label: p.label,
+              imageUrl: p.imageUrl,
+              priceInCents: p.priceInCents,
+            }))
+          : null,
       })
       .where(eq(productTable.id, existingProduct.id));
 
@@ -347,7 +411,7 @@ export async function updateAdminProduct(
           name: payload.data.variantName,
           color: payload.data.variantColor,
           imageUrl: payload.data.imageUrl,
-          priceInCents: Math.round(payload.data.priceInReais * 100),
+          priceInCents: updateFinalPriceInCents,
           slug: variantSlug,
           size: primaryVariantSize,
           stock: payload.data.variantStock,
@@ -424,7 +488,7 @@ export async function updateAdminProduct(
           name: payload.data.variantName,
           color: variantStock.color,
           imageUrl: variantStock.imageUrl,
-          priceInCents: Math.round(payload.data.priceInReais * 100),
+          priceInCents: updateFinalPriceInCents,
           slug: newVariantSlug,
           size: variantStock.size,
           stock: variantStock.stock,
@@ -442,7 +506,7 @@ export async function updateAdminProduct(
       name: payload.data.variantName,
       color: payload.data.variantColor,
       imageUrl: payload.data.imageUrl,
-      priceInCents: Math.round(payload.data.priceInReais * 100),
+      priceInCents: updateFinalPriceInCents,
       slug: variantSlug,
       size: primaryVariantSize,
       stock: payload.data.variantStock,

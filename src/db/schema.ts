@@ -5,6 +5,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -129,28 +130,66 @@ export const categoryRelations = relations(categoryTable, ({ many }) => ({
   sizeCharts: many(sizeChartTable),
 }));
 
-export const productTable = pgTable("product", {
-  id: uuid().primaryKey().defaultRandom(),
-  categoryId: uuid("category_id")
-    .notNull()
-    .references(() => categoryTable.id, { onDelete: "restrict" }),
-  name: text().notNull(),
-  slug: text().notNull().unique(),
-  description: text().notNull(),
-  brand: varchar("brand", { length: 100 }),
-  videoUrl: varchar("video_url", { length: 500 }),
-  isVerified: boolean("is_verified").notNull().default(false),
-  originPostalCode: varchar("origin_postal_code", { length: 8 }),
-  sizeType: sizeTypeEnum("size_type").notNull().default("alphabetic"),
-  shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
-  weightGrams: integer("weight_grams"),
-  widthCm: integer("width_cm"),
-  heightCm: integer("height_cm"),
-  lengthCm: integer("length_cm"),
-  deliveryDaysMin: integer("delivery_days_min"),
-  deliveryDaysMax: integer("delivery_days_max"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export type PatchOption = {
+  id: string;
+  label: string;
+  imageUrl: string;
+  priceInCents: number;
+};
+
+export const productTable = pgTable(
+  "product",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categoryTable.id, { onDelete: "restrict" }),
+    name: text().notNull(),
+    slug: text().notNull().unique(),
+    description: text().notNull(),
+    brand: varchar("brand", { length: 100 }),
+    videoUrl: varchar("video_url", { length: 500 }),
+    isVerified: boolean("is_verified").notNull().default(false),
+    originPostalCode: varchar("origin_postal_code", { length: 8 }),
+    sizeType: sizeTypeEnum("size_type").notNull().default("alphabetic"),
+    shippingCostInCents: integer("shipping_cost_in_cents").notNull().default(0),
+    weightGrams: integer("weight_grams"),
+    widthCm: integer("width_cm"),
+    heightCm: integer("height_cm"),
+    lengthCm: integer("length_cm"),
+    deliveryDaysMin: integer("delivery_days_min"),
+    deliveryDaysMax: integer("delivery_days_max"),
+    // Discount & promotion
+    discountPercent: integer("discount_percent"),
+    originalPriceInCents: integer("original_price_in_cents"),
+    isOnSale: boolean("is_on_sale").notNull().default(false),
+    badgeLabel: varchar("badge_label", { length: 50 }),
+    pixDiscountText: varchar("pix_discount_text", { length: 255 }),
+    // Customization
+    isCustomizable: boolean("is_customizable").notNull().default(false),
+    customizationLeadDays: integer("customization_lead_days")
+      .notNull()
+      .default(2),
+    nameFieldEnabled: boolean("name_field_enabled").notNull().default(false),
+    nameFieldPriceInCents: integer("name_field_price_in_cents")
+      .notNull()
+      .default(0),
+    numberFieldEnabled: boolean("number_field_enabled")
+      .notNull()
+      .default(false),
+    numberFieldPriceInCents: integer("number_field_price_in_cents")
+      .notNull()
+      .default(0),
+    patchOptions: jsonb("patch_options").$type<PatchOption[]>(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      "product_discount_percent_range",
+      sql`${table.discountPercent} IS NULL OR (${table.discountPercent} >= 1 AND ${table.discountPercent} <= 99)`,
+    ),
+  ],
+);
 
 export const productRelations = relations(productTable, ({ one, many }) => ({
   category: one(categoryTable, {
@@ -383,6 +422,12 @@ export const cartItemTable = pgTable("cart_item", {
   shippingServiceName: varchar("shipping_service_name", { length: 100 }),
   shippingDaysMin: integer("shipping_days_min"),
   shippingDaysMax: integer("shipping_days_max"),
+  customizationName: varchar("customization_name", { length: 30 }),
+  customizationNumber: varchar("customization_number", { length: 5 }),
+  customizationPatchId: varchar("customization_patch_id", { length: 100 }),
+  customizationExtraInCents: integer("customization_extra_in_cents")
+    .notNull()
+    .default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
