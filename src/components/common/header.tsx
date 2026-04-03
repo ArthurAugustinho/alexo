@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { HeartIcon, LogInIcon, LogOutIcon, MapPinIcon, MenuIcon, PackageIcon, UserCircleIcon, UserIcon } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -66,7 +65,7 @@ export const Header = () => {
   }
 
   return (
-    <header className="px-5 py-4">
+    <header className="px-5 py-6">
       <div className="grid grid-cols-3 items-center">
 
         {/* Coluna esquerda — saudação (só logado, só desktop) */}
@@ -79,10 +78,19 @@ export const Header = () => {
           )}
         </div>
 
-        {/* Coluna central — logo */}
+        {/* Coluna central — logo em texto */}
         <div className="flex justify-center">
           <Link href="/">
-            <Image src="/logo.svg" alt="ALEXO" width={130} height={34} />
+            <span
+              style={{
+                fontSize: "42px",
+                fontWeight: 800,
+                letterSpacing: "-1px",
+                lineHeight: 1,
+              }}
+            >
+              ALEXO°
+            </span>
           </Link>
         </div>
 
