@@ -3,6 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { HeartIcon, LogInIcon, LogOutIcon, MapPinIcon, MenuIcon, PackageIcon, UserCircleIcon, UserIcon } from "lucide-react";
 import Link from "next/link";
+
+import { italiana } from "@/lib/fonts";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -82,14 +84,28 @@ export const Header = () => {
         <div className="flex justify-center">
           <Link href="/">
             <span
+              className={italiana.className}
               style={{
-                fontSize: "42px",
-                fontWeight: 800,
-                letterSpacing: "-1px",
+                fontSize: "52px",
+                letterSpacing: "14px",
                 lineHeight: 1,
+                display: "inline-flex",
+                alignItems: "flex-start",
+                WebkitTextStroke: "0.6px currentColor",
               }}
             >
-              ALEXO°
+              A L E X O
+              <span
+                style={{
+                  fontSize: "16px",
+                  letterSpacing: 0,
+                  lineHeight: 1,
+                  marginTop: "4px",
+                  WebkitTextStroke: 0,
+                }}
+              >
+                ®
+              </span>
             </span>
           </Link>
         </div>

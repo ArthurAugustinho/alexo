@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { italiana } from "@/lib/fonts";
+
 import { AnnouncementBar } from "@/components/common/announcement-bar";
 import { CategoryNav } from "@/components/common/category-nav";
 import { Footer } from "@/components/common/footer";
@@ -42,7 +44,7 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${italiana.variable} flex min-h-screen flex-col antialiased`}
         suppressHydrationWarning
       >
         <AnnouncementBar bars={bars} />
