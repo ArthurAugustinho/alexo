@@ -43,7 +43,10 @@ export const finishOrder = async (): Promise<
     };
 
   const subtotalInCents = cart.items.reduce(
-    (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
+    (acc, item) =>
+      acc +
+      item.productVariant.priceInCents * item.quantity +
+      (item.customizationExtraInCents ?? 0),
     0,
   );
   const shippingCostInCents = cart.items.reduce(
@@ -133,38 +136,6 @@ export const createCheckoutSession = async (data: {
   if (order.userId !== session.user.id)
     return { success: false, message: "Não autorizado." };
 
-  const orderItems = await db.query.orderItemTable.findMany({
-    where: eq(orderItemTable.orderId, payload.data.orderId),
-    with: { productVariant: { with: { product: true } } },
-  });
-
-  const productLineItems = orderItems.map((orderItem) => ({
-    price_data: {
-      currency: "brl",
-      product_data: {
-        name: `${orderItem.productVariant.product.name} - ${orderItem.productVariant.name}`,
-        description: orderItem.productVariant.product.description,
-        images: [orderItem.productVariant.imageUrl],
-      },
-      unit_amount: orderItem.priceInCents,
-    },
-    quantity: orderItem.quantity,
-  }));
-
-  const shippingLineItem =
-    order.shippingCostInCents > 0
-      ? [
-          {
-            price_data: {
-              currency: "brl",
-              product_data: { name: "Frete" },
-              unit_amount: order.shippingCostInCents,
-            },
-            quantity: 1,
-          },
-        ]
-      : [];
-
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   const checkoutSession = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
@@ -172,7 +143,16 @@ export const createCheckoutSession = async (data: {
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?orderId=${payload.data.orderId}`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/cancel?orderId=${payload.data.orderId}`,
     metadata: { orderId: payload.data.orderId },
-    line_items: [...productLineItems, ...shippingLineItem],
+    line_items: [
+      {
+        price_data: {
+          currency: "brl",
+          product_data: { name: "Pedido Alexo Commerce" },
+          unit_amount: order.totalPriceInCents,
+        },
+        quantity: 1,
+      },
+    ],
   });
 
   if (!checkoutSession.url)
