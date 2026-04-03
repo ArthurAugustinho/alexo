@@ -72,6 +72,9 @@ export const Cart = ({ isAuthenticated }: CartProps) => {
                       quantity={item.quantity}
                       shippingCostInCents={item.shippingCostInCents ?? 0}
                       shippingServiceName={item.shippingServiceName}
+                      customizationExtraInCents={
+                        item.customizationExtraInCents ?? 0
+                      }
                     />
                   ))
                 ) : (

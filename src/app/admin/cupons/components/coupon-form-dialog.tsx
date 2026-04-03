@@ -323,6 +323,8 @@ export function CouponFormDialog({
                           )
                         }
                         decimalScale={2}
+                        decimalSeparator=","
+                        thousandSeparator="."
                         allowNegative={false}
                         placeholder="0,00"
                       />

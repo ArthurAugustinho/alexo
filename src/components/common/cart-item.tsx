@@ -19,6 +19,7 @@ interface CartItemProps {
   quantity: number;
   shippingCostInCents: number;
   shippingServiceName?: string | null;
+  customizationExtraInCents?: number;
 }
 
 const CartItem = ({
@@ -31,6 +32,7 @@ const CartItem = ({
   quantity,
   shippingCostInCents,
   shippingServiceName,
+  customizationExtraInCents = 0,
 }: CartItemProps) => {
   const removeProductFromCartMutation = useRemoveProductFromCart(id);
   const decreaseCartProductQuantityMutation = useDecreaseCartProduct(id);
@@ -99,7 +101,7 @@ const CartItem = ({
           <TrashIcon />
         </Button>
         <p className="text-sm font-bold">
-          {formatCentsToBRL(productVariantPriceInCents)}
+          {formatCentsToBRL(productVariantPriceInCents + customizationExtraInCents)}
         </p>
         <p className="text-muted-foreground text-xs">
           {shippingServiceName ? `${shippingServiceName} · ` : ""}

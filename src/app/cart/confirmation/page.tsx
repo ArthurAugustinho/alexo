@@ -37,7 +37,10 @@ const ConfirmationPage = async () => {
   }
 
   const subtotalInCents = cart.items.reduce(
-    (acc, item) => acc + item.productVariant.priceInCents * item.quantity,
+    (acc, item) =>
+      acc +
+      item.productVariant.priceInCents * item.quantity +
+      (item.customizationExtraInCents ?? 0),
     0,
   );
   const storedShippingInCents = cart.items.reduce(
@@ -63,6 +66,10 @@ const ConfirmationPage = async () => {
             quantity: item.quantity,
             priceInCents: item.productVariant.priceInCents,
             imageUrl: item.productVariant.imageUrl,
+            customizationExtraInCents: item.customizationExtraInCents ?? 0,
+            customizationName: item.customizationName ?? null,
+            customizationNumber: item.customizationNumber ?? null,
+            customizationPatchText: item.customizationPatchId ?? null,
           }))}
         />
       </div>

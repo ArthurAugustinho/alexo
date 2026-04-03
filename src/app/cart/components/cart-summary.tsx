@@ -17,6 +17,10 @@ type CartSummaryProduct = {
   quantity: number;
   priceInCents: number;
   imageUrl: string;
+  customizationExtraInCents?: number;
+  customizationName?: string | null;
+  customizationNumber?: string | null;
+  customizationPatchText?: string | null;
 };
 
 interface CartSummaryProps {
@@ -157,8 +161,26 @@ const CartSummary = ({
                     {product.quantity}{" "}
                     {product.quantity > 1 ? "unidades" : "unidade"}
                   </p>
+                  {product.customizationName && (
+                    <p className="text-muted-foreground text-xs">
+                      Nome: {product.customizationName}
+                    </p>
+                  )}
+                  {product.customizationNumber && (
+                    <p className="text-muted-foreground text-xs">
+                      Número: {product.customizationNumber}
+                    </p>
+                  )}
+                  {product.customizationPatchText && (
+                    <p className="text-muted-foreground text-xs">
+                      Patch: {product.customizationPatchText}
+                    </p>
+                  )}
                   <p className="font-semibold">
-                    {formatCurrency(product.priceInCents * product.quantity)}
+                    {formatCurrency(
+                      product.priceInCents * product.quantity +
+                        (product.customizationExtraInCents ?? 0),
+                    )}
                   </p>
                 </div>
               </div>

@@ -47,7 +47,8 @@ export const finishOrder = async () => {
     (acc, item) =>
       acc +
       item.productVariant.priceInCents * item.quantity +
-      (item.customizationExtraInCents ?? 0),
+      (item.customizationExtraInCents ?? 0) +
+      (item.shippingCostInCents ?? 0),
     0,
   );
 
