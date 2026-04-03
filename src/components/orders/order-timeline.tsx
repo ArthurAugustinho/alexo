@@ -3,7 +3,6 @@
 import {
   CheckCircleIcon,
   CreditCardIcon,
-  ExternalLinkIcon,
   PackageCheckIcon,
   ShoppingBagIcon,
   TruckIcon,
@@ -176,26 +175,6 @@ export function OrderTimeline({ order }: Props) {
         })}
       </div>
 
-      {/* Tracking info */}
-      {order.trackingCode && (
-        <div className="mt-3 rounded-lg border bg-muted/40 px-3 py-2.5">
-          <p className="text-xs">
-            <span className="font-medium">Rastreamento:</span>{" "}
-            <span className="font-mono">{order.trackingCode}</span>
-          </p>
-          {order.trackingUrl && (
-            <a
-              href={order.trackingUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-1 flex items-center gap-1 text-xs text-primary hover:underline"
-            >
-              Rastrear encomenda
-              <ExternalLinkIcon className="size-3" />
-            </a>
-          )}
-        </div>
-      )}
     </div>
   );
 }

@@ -235,14 +235,6 @@ export function OrderCard({ order, reviewedProductIds = [] }: Props) {
         </div>
       )}
 
-      {/* Footer link */}
-      <Link
-        href="/account/orders"
-        className="text-primary flex items-center text-xs hover:underline"
-      >
-        Ver histórico completo →
-      </Link>
-
       <ReturnRequestDialog
         order={order}
         open={returnDialogOpen}

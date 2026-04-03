@@ -164,12 +164,14 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
         </div>
 
         {/* Carrosséis */}
-        <RecommendedCarousel
-          categoryId={product.categoryId}
-          currentProductId={product.id}
-        />
-        <FrequentlyBoughtCarousel currentProductId={product.id} />
-        <SaleCarousel currentProductId={product.id} />
+        <div className="px-5 lg:px-8">
+          <RecommendedCarousel
+            categoryId={product.categoryId}
+            currentProductId={product.id}
+          />
+          <FrequentlyBoughtCarousel currentProductId={product.id} />
+          <SaleCarousel currentProductId={product.id} />
+        </div>
 
         <div className="py-8" />
       </div>
