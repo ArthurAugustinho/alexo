@@ -2,32 +2,38 @@ import Image from "next/image";
 
 import type { SimpleBanner } from "@/lib/queries/simple-banner";
 
-type SimpleBannerProps = {
-  banner: SimpleBanner | null;
-};
-
-export function SimpleBanner({ banner }: SimpleBannerProps) {
+export function SimpleBanner({ banner }: { banner: SimpleBanner | null }) {
   if (!banner) return null;
 
-  const content = (
-    <div className="relative h-[100px] w-full overflow-hidden">
-      <Image
-        src={banner.imageUrl}
-        alt="Banner promocional"
-        fill
-        className="object-cover"
-        priority
-      />
+  return (
+    <div className="w-full">
+      {banner.linkUrl ? (
+        <a href={banner.linkUrl} className="block w-full">
+          <div className="relative h-[100px] w-full overflow-hidden">
+            <Image
+              src={banner.imageUrl}
+              alt="Banner"
+              fill
+              priority
+              unoptimized
+              sizes="100vw"
+              className="object-cover"
+            />
+          </div>
+        </a>
+      ) : (
+        <div className="relative h-[100px] w-full overflow-hidden">
+          <Image
+            src={banner.imageUrl}
+            alt="Banner"
+            fill
+            priority
+            unoptimized
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
     </div>
   );
-
-  if (banner.linkUrl) {
-    return (
-      <a href={banner.linkUrl} className="block w-full">
-        {content}
-      </a>
-    );
-  }
-
-  return content;
 }

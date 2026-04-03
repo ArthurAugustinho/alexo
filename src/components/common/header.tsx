@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { HeartIcon, LogInIcon, LogOutIcon, MapPinIcon, MenuIcon, PackageIcon, UserCircleIcon } from "lucide-react";
+import { HeartIcon, LogInIcon, LogOutIcon, MapPinIcon, MenuIcon, PackageIcon, UserCircleIcon, UserIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -66,12 +66,28 @@ export const Header = () => {
   }
 
   return (
-    <header className="flex items-center justify-between p-5">
-      <Link href="/">
-        <Image src="/logo.svg" alt="ALEXO" width={100} height={26.14} />
-      </Link>
+    <header className="px-5 py-4">
+      <div className="grid grid-cols-3 items-center">
 
-      <div className="flex items-center gap-3">
+        {/* Coluna esquerda — saudação (só logado, só desktop) */}
+        <div className="flex items-center">
+          {session?.user && (
+            <span className="text-muted-foreground hidden items-center gap-1 text-sm md:flex">
+              <UserIcon size={14} />
+              Olá, {session.user.name?.split(" ")[0]}!
+            </span>
+          )}
+        </div>
+
+        {/* Coluna central — logo */}
+        <div className="flex justify-center">
+          <Link href="/">
+            <Image src="/logo.svg" alt="ALEXO" width={130} height={34} />
+          </Link>
+        </div>
+
+        {/* Coluna direita — ícones */}
+        <div className="flex items-center justify-end gap-3">
         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon">
@@ -199,8 +215,9 @@ export const Header = () => {
         <SearchModal />
         <SearchBar />
         <Cart isAuthenticated={Boolean(session?.user)} />
-      </div>
+        </div>
 
+      </div>
     </header>
   );
 };
