@@ -19,6 +19,7 @@ export type ValidateCouponParams = {
   usageCount: number;
   userUsageCount: number;
   isFirstOrder: boolean;
+  totalShippingInCents?: number;
 };
 
 export function validateCoupon(
@@ -31,6 +32,7 @@ export function validateCoupon(
     usageCount,
     userUsageCount,
     isFirstOrder,
+    totalShippingInCents = 0,
   } = params;
 
   if (!coupon.isActive) {
@@ -94,7 +96,11 @@ export function validateCoupon(
   } else if (coupon.type === "fixed") {
     discountInCents = Math.min(coupon.value, cartTotalInCents);
   } else if (coupon.type === "free_shipping") {
-    discountInCents = 0;
+    return {
+      valid: true,
+      discountInCents: totalShippingInCents,
+      message: "Frete grátis aplicado!",
+    };
   } else if (coupon.type === "category") {
     if (!coupon.categoryId) {
       return { valid: false, message: "Cupom de categoria sem categoria configurada." };

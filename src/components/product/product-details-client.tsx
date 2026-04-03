@@ -93,7 +93,8 @@ const ProductDetailsClient = ({
 }: ProductDetailsClientProps) => {
   const [selectedShipping, setSelectedShipping] =
     useState<ShippingOption | null>(null);
-  const [customizationExtra, setCustomizationExtra] = useState(0);
+  const [customizationData, setCustomizationData] =
+    useState<CustomizationData | null>(null);
 
   const {
     allSizesForColor,
@@ -115,7 +116,6 @@ const ProductDetailsClient = ({
   const fallbackVariant = getPreferredVariant(variants);
   const basePrice =
     selectedVariant?.priceInCents ?? fallbackVariant?.priceInCents ?? 0;
-  const displayedPriceInCents = basePrice + customizationExtra;
 
   const allImages = useMemo(() => {
     const seen = new Set<string>();
@@ -131,7 +131,7 @@ const ProductDetailsClient = ({
 
   const handleCustomizationChange = useCallback(
     (data: CustomizationData) => {
-      setCustomizationExtra(data.totalExtraInCents);
+      setCustomizationData(data);
     },
     [],
   );
@@ -208,7 +208,7 @@ const ProductDetailsClient = ({
               </p>
             )}
             <p className="text-2xl font-bold">
-              {formatCentsToBRL(displayedPriceInCents)}
+              {formatCentsToBRL(basePrice)}
             </p>
             {pixDiscountText && (
               <p className="text-muted-foreground text-xs">{pixDiscountText}</p>
@@ -266,6 +266,7 @@ const ProductDetailsClient = ({
           isSelectionComplete={isSelectionComplete}
           selectedVariant={selectedVariant}
           selectedShipping={selectedShipping}
+          customizationData={customizationData}
         />
 
         {/* Delivery time */}
@@ -293,7 +294,7 @@ const ProductDetailsClient = ({
         {logisticsConfig && (
           <LogisticsBlock
             config={logisticsConfig}
-            priceInCents={displayedPriceInCents}
+            priceInCents={basePrice}
           />
         )}
 

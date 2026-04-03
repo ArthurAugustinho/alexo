@@ -57,7 +57,7 @@ export async function applyCoupon(input: ApplyCouponInput): Promise<Result> {
             },
           },
         },
-        columns: { quantity: true },
+        columns: { quantity: true, shippingCostInCents: true },
       },
     },
   });
@@ -68,6 +68,11 @@ export async function applyCoupon(input: ApplyCouponInput): Promise<Result> {
 
   const cartTotalInCents = cart.items.reduce(
     (sum, item) => sum + item.productVariant.priceInCents * item.quantity,
+    0,
+  );
+
+  const totalShippingInCents = cart.items.reduce(
+    (sum, item) => sum + (item.shippingCostInCents ?? 0),
     0,
   );
 
@@ -90,6 +95,7 @@ export async function applyCoupon(input: ApplyCouponInput): Promise<Result> {
     usageCount,
     userUsageCount,
     isFirstOrder,
+    totalShippingInCents,
   });
 
   if (!result.valid) {

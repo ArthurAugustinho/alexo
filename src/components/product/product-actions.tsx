@@ -12,17 +12,20 @@ import { addProductToCart } from "@/lib/actions/cart";
 import { type ProductVariantModel } from "@/lib/product-variant-schema";
 import { type ShippingOption } from "@/lib/shipping-schema";
 import { cn } from "@/lib/utils";
+import { type CustomizationData } from "./product-customization";
 
 type ProductActionsProps = {
   isSelectionComplete: boolean;
   selectedVariant: ProductVariantModel | null;
   selectedShipping: ShippingOption | null;
+  customizationData: CustomizationData | null;
 };
 
 const ProductActions = ({
   isSelectionComplete,
   selectedVariant,
   selectedShipping,
+  customizationData,
 }: ProductActionsProps) => {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -45,6 +48,10 @@ const ProductActions = ({
         shippingServiceName: selectedShipping.name,
         shippingDaysMin: selectedShipping.deliveryTime,
         shippingDaysMax: selectedShipping.deliveryTime,
+        customizationName: customizationData?.name || undefined,
+        customizationNumber: customizationData?.number || undefined,
+        customizationPatchId: customizationData?.patchText || undefined,
+        customizationExtraInCents: customizationData?.totalExtraInCents ?? 0,
       });
     },
     onSuccess: () => {
@@ -105,6 +112,10 @@ const ProductActions = ({
         shippingServiceName: selectedShipping.name,
         shippingDaysMin: selectedShipping.deliveryTime,
         shippingDaysMax: selectedShipping.deliveryTime,
+        customizationName: customizationData?.name || undefined,
+        customizationNumber: customizationData?.number || undefined,
+        customizationPatchId: customizationData?.patchText || undefined,
+        customizationExtraInCents: customizationData?.totalExtraInCents ?? 0,
       });
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       router.push("/cart/identification");

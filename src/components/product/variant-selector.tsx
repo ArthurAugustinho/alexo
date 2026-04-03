@@ -222,11 +222,6 @@ const VariantSelector = ({
                         </button>
                       </PopoverTrigger>
 
-                      {stock > 0 ? (
-                        <p className="text-muted-foreground mt-1 text-center text-[11px]">
-                          {stock} unidades
-                        </p>
-                      ) : null}
                     </div>
 
                     <PopoverContent

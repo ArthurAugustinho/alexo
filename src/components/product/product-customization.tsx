@@ -1,7 +1,6 @@
 "use client";
 
 import { ChevronDownIcon, ChevronUpIcon, HelpCircleIcon } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,7 @@ import { formatCentsToBRL } from "@/helpers/money";
 export type CustomizationData = {
   name: string;
   number: string;
-  selectedPatchId: string | null;
+  patchText: string;
   totalExtraInCents: number;
 };
 
@@ -38,20 +37,21 @@ export function ProductCustomization({
   const [collapsed, setCollapsed] = useState(false);
   const [name, setName] = useState("");
   const [number, setNumber] = useState("");
-  const [selectedPatchId, setSelectedPatchId] = useState<string | null>(null);
+  const [patchText, setPatchText] = useState("");
+
+  const patchPrice = patches[0]?.priceInCents ?? 0;
 
   const totalExtraInCents = useMemo(() => {
     let extra = 0;
     if (nameField?.enabled && name.trim()) extra += nameField.priceInCents;
     if (numberField?.enabled && number.trim()) extra += numberField.priceInCents;
-    const patch = patches.find((p) => p.id === selectedPatchId);
-    if (patch) extra += patch.priceInCents;
+    if (patchText.trim()) extra += patchPrice;
     return extra;
-  }, [name, number, selectedPatchId, nameField, numberField, patches]);
+  }, [name, number, patchText, nameField, numberField, patchPrice]);
 
   useEffect(() => {
-    onChange({ name, number, selectedPatchId, totalExtraInCents });
-  }, [name, number, selectedPatchId, totalExtraInCents, onChange]);
+    onChange({ name, number, patchText, totalExtraInCents });
+  }, [name, number, patchText, totalExtraInCents, onChange]);
 
   if (!isCustomizable) return null;
 
@@ -141,45 +141,22 @@ export function ProductCustomization({
 
           {/* Patches */}
           {showPatches && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium">Patches</p>
-              <div className="flex flex-wrap gap-2">
-                {patches.map((patch) => {
-                  const isSelected = selectedPatchId === patch.id;
-                  return (
-                    <button
-                      key={patch.id}
-                      type="button"
-                      onClick={() =>
-                        setSelectedPatchId(isSelected ? null : patch.id)
-                      }
-                      className={`flex flex-col items-center gap-1 rounded-xl border-2 p-2 transition-colors ${
-                        isSelected
-                          ? "border-primary"
-                          : "border-border hover:border-primary/40"
-                      }`}
-                    >
-                      <div className="relative size-12 overflow-hidden rounded-lg">
-                        <Image
-                          src={patch.imageUrl}
-                          alt={patch.label}
-                          fill
-                          className="object-cover"
-                          sizes="48px"
-                        />
-                      </div>
-                      <span className="max-w-[80px] text-center text-[10px] leading-tight font-medium">
-                        {patch.label}
-                      </span>
-                      {patch.priceInCents > 0 && (
-                        <span className="text-muted-foreground text-[10px]">
-                          +{formatCentsToBRL(patch.priceInCents)}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium">
+                Patches
+                {patchPrice > 0 && (
+                  <span className="text-muted-foreground ml-1">
+                    (+{formatCentsToBRL(patchPrice)})
+                  </span>
+                )}
+              </label>
+              <Input
+                placeholder="Digite o nome do patch desejado"
+                maxLength={100}
+                value={patchText}
+                onChange={(e) => setPatchText(e.target.value)}
+                className="rounded-xl"
+              />
             </div>
           )}
 

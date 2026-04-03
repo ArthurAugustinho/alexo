@@ -222,17 +222,23 @@ export function CouponFormDialog({
                       <FormControl>
                         <NumericFormat
                           customInput={Input}
-                          value={field.value}
+                          value={
+                            selectedType === "fixed"
+                              ? field.value / 100
+                              : field.value
+                          }
                           onValueChange={(v) =>
-                            field.onChange(v.floatValue ?? 0)
+                            field.onChange(
+                              selectedType === "fixed"
+                                ? Math.round((v.floatValue ?? 0) * 100)
+                                : (v.floatValue ?? 0),
+                            )
                           }
-                          decimalScale={
-                            selectedType === "fixed" ? 2 : 0
-                          }
+                          decimalScale={selectedType === "fixed" ? 2 : 0}
+                          decimalSeparator=","
+                          thousandSeparator="."
                           allowNegative={false}
-                          placeholder={
-                            selectedType === "fixed" ? "0,00" : "0"
-                          }
+                          placeholder={selectedType === "fixed" ? "0,00" : "0"}
                         />
                       </FormControl>
                       <FormMessage />
