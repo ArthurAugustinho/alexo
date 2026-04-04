@@ -210,6 +210,119 @@ export async function getOrderById(
   };
 }
 
+export type OrderDetail = {
+  id: string;
+  status:
+    | "pending"
+    | "paid"
+    | "shipped"
+    | "delivered"
+    | "canceled"
+    | "refunded";
+  totalPriceInCents: number;
+  originalTotalInCents: number | null;
+  shippingCostInCents: number;
+  discountInCents: number;
+  couponCode: string | null;
+  stripePaymentIntentId: string | null;
+  trackingCode: string | null;
+  trackingUrl: string | null;
+  shippedAt: Date | null;
+  deliveredAt: Date | null;
+  canceledAt: Date | null;
+  refundedAt: Date | null;
+  statusNote: string | null;
+  createdAt: Date;
+  recipientName: string;
+  phone: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  user: { name: string; email: string };
+  items: Array<{
+    id: string;
+    quantity: number;
+    priceInCents: number;
+    variant: {
+      color: string;
+      size: string;
+      imageUrl: string;
+      product: { name: string; slug: string };
+    };
+  }>;
+};
+
+export async function getOrderDetailById(
+  orderId: string,
+): Promise<OrderDetail | null> {
+  noStore();
+
+  const row = await db.query.orderTable.findFirst({
+    where: eq(orderTable.id, orderId),
+    with: {
+      user: { columns: { name: true, email: true } },
+      items: {
+        with: {
+          productVariant: {
+            with: {
+              product: { columns: { id: true, name: true, slug: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    status: row.status,
+    totalPriceInCents: row.totalPriceInCents,
+    originalTotalInCents: row.originalTotalInCents,
+    shippingCostInCents: row.shippingCostInCents,
+    discountInCents: row.discountInCents,
+    couponCode: row.couponCode,
+    stripePaymentIntentId: row.stripePaymentIntentId,
+    trackingCode: row.trackingCode,
+    trackingUrl: row.trackingUrl,
+    shippedAt: row.shippedAt,
+    deliveredAt: row.deliveredAt,
+    canceledAt: row.canceledAt,
+    refundedAt: row.refundedAt,
+    statusNote: row.statusNote,
+    createdAt: row.createdAt,
+    recipientName: row.recipientName,
+    phone: row.phone,
+    street: row.street,
+    number: row.number,
+    complement: row.complement ?? null,
+    neighborhood: row.neighborhood,
+    city: row.city,
+    state: row.state,
+    zipCode: row.zipCode,
+    user: { name: row.user.name, email: row.user.email },
+    items: row.items.map((item) => ({
+      id: item.id,
+      quantity: item.quantity,
+      priceInCents: item.priceInCents,
+      variant: {
+        color: item.productVariant.color,
+        size: item.productVariant.size,
+        imageUrl: item.productVariant.imageUrl,
+        product: {
+          name: item.productVariant.product.name,
+          slug: item.productVariant.product.slug,
+        },
+      },
+    })),
+  };
+}
+
 export async function getAllOrdersForAdmin(): Promise<AdminOrderRow[]> {
   noStore();
 

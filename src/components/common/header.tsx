@@ -3,8 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { HeartIcon, LogInIcon, LogOutIcon, MapPinIcon, MenuIcon, PackageIcon, UserCircleIcon, UserIcon } from "lucide-react";
 import Link from "next/link";
-
-import { italiana } from "@/lib/fonts";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -13,6 +11,7 @@ import { useOrders } from "@/hooks/queries/use-orders";
 import { useProfile } from "@/hooks/queries/use-profile";
 import { getWishlistProductIdsForCurrentUser } from "@/lib/actions/wishlist";
 import { authClient } from "@/lib/auth-client";
+import { italiana } from "@/lib/fonts";
 
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";

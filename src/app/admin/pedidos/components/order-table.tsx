@@ -102,7 +102,7 @@ export function OrderTable({ orders }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [detailOrder, setDetailOrder] = useState<AdminOrderRow | null>(null);
+  const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
   const [updateOrder, setUpdateOrder] = useState<AdminOrderRow | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -329,7 +329,7 @@ export function OrderTable({ orders }: Props) {
                         key={order.id}
                         className="hover:bg-muted/20 cursor-pointer transition-colors"
                         onClick={() => {
-                          setDetailOrder(order);
+                          setDetailOrderId(order.id);
                         }}
                       >
                         <td
@@ -413,15 +413,12 @@ export function OrderTable({ orders }: Props) {
       </Tabs>
 
       <OrderDetailSheet
-        order={detailOrder}
-        open={!!detailOrder}
+        orderId={detailOrderId}
+        open={!!detailOrderId}
         onOpenChange={(open) => {
-          if (!open) setDetailOrder(null);
+          if (!open) setDetailOrderId(null);
         }}
-        onUpdateStatus={(order) => {
-          setDetailOrder(null);
-          setUpdateOrder(order);
-        }}
+        onUpdateStatus={() => {}}
       />
 
       {updateOrder && (
