@@ -247,6 +247,10 @@ export type OrderDetail = {
     id: string;
     quantity: number;
     priceInCents: number;
+    customizationName: string | null;
+    customizationNumber: string | null;
+    customizationPatchText: string | null;
+    customizationExtraInCents: number;
     variant: {
       color: string;
       size: string;
@@ -310,6 +314,10 @@ export async function getOrderDetailById(
       id: item.id,
       quantity: item.quantity,
       priceInCents: item.priceInCents,
+      customizationName: item.customizationName ?? null,
+      customizationNumber: item.customizationNumber ?? null,
+      customizationPatchText: item.customizationPatchText ?? null,
+      customizationExtraInCents: item.customizationExtraInCents ?? 0,
       variant: {
         color: item.productVariant.color,
         size: item.productVariant.size,

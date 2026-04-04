@@ -238,19 +238,52 @@ export function OrderDetailSheet({
                     Copiar
                   </Button>
                 </div>
-                <div className="space-y-0.5 text-sm">
-                  <p className="font-medium">{order.recipientName}</p>
-                  <p className="text-muted-foreground text-xs">{order.phone}</p>
-                  <p>
-                    {order.street}, {order.number}
-                    {order.complement ? ` - ${order.complement}` : ""}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {order.neighborhood} · {order.city} - {order.state}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    CEP: {order.zipCode}
-                  </p>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground min-w-[90px] shrink-0">
+                      Destinatário:
+                    </span>
+                    <span>{order.recipientName}</span>
+                  </div>
+                  {order.phone && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground min-w-[90px] shrink-0">
+                        Telefone:
+                      </span>
+                      <span>{order.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground min-w-[90px] shrink-0">
+                      Endereço:
+                    </span>
+                    <span>
+                      {order.street}, {order.number}
+                      {order.complement ? ` - ${order.complement}` : ""}
+                    </span>
+                  </div>
+                  {order.neighborhood && (
+                    <div className="flex gap-2">
+                      <span className="text-muted-foreground min-w-[90px] shrink-0">
+                        Bairro:
+                      </span>
+                      <span>{order.neighborhood}</span>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground min-w-[90px] shrink-0">
+                      Cidade:
+                    </span>
+                    <span>
+                      {order.city} - {order.state}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-muted-foreground min-w-[90px] shrink-0">
+                      CEP:
+                    </span>
+                    <span>{order.zipCode}</span>
+                  </div>
                 </div>
               </div>
 
@@ -278,9 +311,51 @@ export function OrderDetailSheet({
                           {item.variant.color} · {item.variant.size} · x
                           {item.quantity}
                         </p>
+                        {(item.customizationName ||
+                          item.customizationNumber ||
+                          item.customizationPatchText) && (
+                          <div className="border-border mt-1.5 space-y-0.5 border-l-2 pl-2">
+                            {item.customizationName && (
+                              <p className="text-xs">
+                                <span className="text-muted-foreground">
+                                  Nome:{" "}
+                                </span>
+                                {item.customizationName}
+                              </p>
+                            )}
+                            {item.customizationNumber && (
+                              <p className="text-xs">
+                                <span className="text-muted-foreground">
+                                  Número:{" "}
+                                </span>
+                                {item.customizationNumber}
+                              </p>
+                            )}
+                            {item.customizationPatchText && (
+                              <p className="text-xs">
+                                <span className="text-muted-foreground">
+                                  Patch:{" "}
+                                </span>
+                                {item.customizationPatchText}
+                              </p>
+                            )}
+                            {item.customizationExtraInCents > 0 && (
+                              <p className="text-primary text-xs font-medium">
+                                +{" "}
+                                {formatCentsToBRL(
+                                  item.customizationExtraInCents,
+                                )}{" "}
+                                personalização
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <p className="shrink-0 text-sm font-medium">
-                        {formatCentsToBRL(item.priceInCents * item.quantity)}
+                        {formatCentsToBRL(
+                          item.priceInCents * item.quantity +
+                            item.customizationExtraInCents,
+                        )}
                       </p>
                     </div>
                   ))}

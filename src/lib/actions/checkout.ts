@@ -99,6 +99,10 @@ export const finishOrder = async (): Promise<
         productVariantId: item.productVariant.id,
         quantity: item.quantity,
         priceInCents: item.productVariant.priceInCents,
+        customizationName: item.customizationName ?? null,
+        customizationNumber: item.customizationNumber ?? null,
+        customizationPatchText: item.customizationPatchId ?? null,
+        customizationExtraInCents: item.customizationExtraInCents ?? 0,
       })),
     );
 

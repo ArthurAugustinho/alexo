@@ -534,6 +534,12 @@ export const orderItemTable = pgTable("order_item", {
     .references(() => productVariantTable.id, { onDelete: "restrict" }),
   quantity: integer("quantity").notNull(),
   priceInCents: integer("price_in_cents").notNull(),
+  customizationName: varchar("customization_name", { length: 30 }),
+  customizationNumber: varchar("customization_number", { length: 5 }),
+  customizationPatchText: varchar("customization_patch_text", { length: 100 }),
+  customizationExtraInCents: integer("customization_extra_in_cents")
+    .notNull()
+    .default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

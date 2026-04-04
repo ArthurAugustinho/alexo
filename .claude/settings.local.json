@@ -9,7 +9,8 @@
       "Bash(npx drizzle-kit *)",
       "Bash(node -e \":*)",
       "Bash(node -e ':*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(ls /c/My-Projects/alexo/src/components/admin/size-chart-manager*)"
     ]
   }
 }
