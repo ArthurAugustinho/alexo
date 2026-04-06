@@ -1,6 +1,7 @@
 import "./globals.css";
 
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -60,6 +61,7 @@ export default async function RootLayout({
         {widgetConfig && <SupportWidget config={widgetConfig} />}
         <Toaster position="top-center" />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
