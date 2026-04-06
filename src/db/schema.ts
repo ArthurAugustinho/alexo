@@ -201,6 +201,34 @@ export const productRelations = relations(productTable, ({ one, many }) => ({
   variants: many(productVariantTable),
   wishlistItems: many(wishlistItemTable),
   reviews: many(productReviewTable),
+  images: many(productImageTable),
+}));
+
+export const productImageTable = pgTable(
+  "product_images",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => productTable.id, { onDelete: "cascade" }),
+    url: varchar("url", { length: 500 }).notNull(),
+    alt: varchar("alt", { length: 200 }),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [
+    index("product_images_product_position_idx").on(
+      table.productId,
+      table.position,
+    ),
+  ],
+);
+
+export const productImageRelations = relations(productImageTable, ({ one }) => ({
+  product: one(productTable, {
+    fields: [productImageTable.productId],
+    references: [productTable.id],
+  }),
 }));
 
 export const productSizeTable = pgTable("product_size", {

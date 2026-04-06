@@ -26,6 +26,7 @@ import { generateSlug } from "@/lib/slug";
 type AdminProductActionResult = {
   success: boolean;
   message: string;
+  productId?: string;
 };
 
 function getValidationErrorMessage(
@@ -244,11 +245,13 @@ export async function createAdminProduct(
       tx,
     });
 
+    const primaryImageUrl = payload.data.images[0]?.url ?? "";
+
     await tx.insert(productVariantTable).values({
       productId: createdProduct.id,
       name: payload.data.variantName,
       color: payload.data.variantColor,
-      imageUrl: payload.data.imageUrl,
+      imageUrl: primaryImageUrl,
       priceInCents: finalPriceInCents,
       slug: variantSlug,
       size: primaryVariantSize,
@@ -265,6 +268,7 @@ export async function createAdminProduct(
   return {
     success: true,
     message: "Produto criado com sucesso.",
+    productId: createdProductId,
   };
 }
 
@@ -404,13 +408,15 @@ export async function updateAdminProduct(
       tx,
     });
 
+    const updatePrimaryImageUrl = payload.data.images[0]?.url ?? "";
+
     if (primaryVariant) {
       await tx
         .update(productVariantTable)
         .set({
           name: payload.data.variantName,
           color: payload.data.variantColor,
-          imageUrl: payload.data.imageUrl,
+          imageUrl: updatePrimaryImageUrl,
           priceInCents: updateFinalPriceInCents,
           slug: variantSlug,
           size: primaryVariantSize,
@@ -505,7 +511,7 @@ export async function updateAdminProduct(
       productId: existingProduct.id,
       name: payload.data.variantName,
       color: payload.data.variantColor,
-      imageUrl: payload.data.imageUrl,
+      imageUrl: updatePrimaryImageUrl,
       priceInCents: updateFinalPriceInCents,
       slug: variantSlug,
       size: primaryVariantSize,

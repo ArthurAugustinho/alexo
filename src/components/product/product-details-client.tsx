@@ -38,6 +38,7 @@ type ProductDetailsClientProps = {
   productBrand?: string | null;
   isVerified: boolean;
   videoUrl?: string | null;
+  productImages?: Array<{ url: string; alt?: string | null }>;
   sizeChart: SizeChartRange[];
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
@@ -71,6 +72,7 @@ const ProductDetailsClient = ({
   productBrand,
   isVerified,
   videoUrl,
+  productImages,
   sizeChart,
   sizeType,
   productSizes,
@@ -120,6 +122,16 @@ const ProductDetailsClient = ({
   const allImages = useMemo(() => {
     const seen = new Set<string>();
     const result: string[] = [];
+    // Product-level images first (from product_images table)
+    if (productImages) {
+      for (const img of productImages) {
+        if (!seen.has(img.url)) {
+          seen.add(img.url);
+          result.push(img.url);
+        }
+      }
+    }
+    // Then variant images
     for (const variant of variants) {
       if (!seen.has(variant.imageUrl)) {
         seen.add(variant.imageUrl);
@@ -127,7 +139,7 @@ const ProductDetailsClient = ({
       }
     }
     return result;
-  }, [variants]);
+  }, [productImages, variants]);
 
   const handleCustomizationChange = useCallback(
     (data: CustomizationData) => {

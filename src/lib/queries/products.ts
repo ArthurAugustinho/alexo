@@ -2,13 +2,20 @@ import { and, asc, eq, gt, ilike, ne, sql } from "drizzle-orm";
 import { unstable_noStore as noStore } from "next/cache";
 
 import { db } from "@/db";
-import { categoryTable, productSizeTable, productTable, productVariantTable } from "@/db/schema";
+import { categoryTable, productImageTable, productSizeTable, productTable, productVariantTable } from "@/db/schema";
 import { getPreferredVariant } from "@/lib/product-variant-schema";
 import {
   productSizeListSchema,
   productSizeTypeSchema,
   productVariantListSchema,
 } from "@/lib/product-variant-schema";
+
+export type ProductImage = {
+  id: string;
+  url: string;
+  alt: string | null;
+  position: number;
+};
 
 export type CarouselProduct = {
   id: string;
@@ -55,6 +62,9 @@ export async function getProductBySlug(slug: string) {
         orderBy: [asc(productSizeTable.position)],
       },
       variants: true,
+      images: {
+        orderBy: [asc(productImageTable.position)],
+      },
     },
   });
 
@@ -67,6 +77,12 @@ export async function getProductBySlug(slug: string) {
     productSizes: productSizeListSchema.parse(product.productSizes),
     sizeType: productSizeTypeSchema.parse(product.sizeType),
     variants: productVariantListSchema.parse(product.variants),
+    images: product.images.map((img) => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt,
+      position: img.position,
+    })) satisfies ProductImage[],
   };
 }
 
@@ -155,6 +171,9 @@ export async function getProductById(productId: string) {
       variants: {
         orderBy: [asc(productVariantTable.createdAt)],
       },
+      images: {
+        orderBy: [asc(productImageTable.position)],
+      },
     },
   });
 
@@ -167,5 +186,11 @@ export async function getProductById(productId: string) {
     productSizes: productSizeListSchema.parse(product.productSizes),
     sizeType: productSizeTypeSchema.parse(product.sizeType),
     variants: productVariantListSchema.parse(product.variants),
+    images: product.images.map((img) => ({
+      id: img.id,
+      url: img.url,
+      alt: img.alt,
+      position: img.position,
+    })) satisfies ProductImage[],
   };
 }

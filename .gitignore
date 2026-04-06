@@ -55,3 +55,5 @@ drizzle/meta
 !/public/uploads/reviews/.gitkeep
 /public/uploads/returns/*
 !/public/uploads/returns/.gitkeep
+/public/uploads/products/*
+!/public/uploads/products/.gitkeep

@@ -132,6 +132,7 @@ const ProductPage = async ({ params, searchParams }: ProductPageProps) => {
           productBrand={product.brand}
           isVerified={product.isVerified}
           videoUrl={product.videoUrl}
+          productImages={product.images}
           sizeChart={sizeChartData?.entries ?? []}
           sizeType={product.sizeType}
           productSizes={product.productSizes}

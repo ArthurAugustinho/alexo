@@ -1,18 +1,23 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ImageIcon, TrashIcon } from "lucide-react";
+import { TrashIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useTransition } from "react";
 import { type Resolver, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { NumericFormat, PatternFormat } from "react-number-format";
 import { toast } from "sonner";
 
+import { upsertProductImages } from "@/actions/upsert-product-images";
 import { createAdminProduct, updateAdminProduct } from "@/lib/actions/products";
 import {
   type AdminProductInput,
   adminProductSchema,
 } from "@/lib/admin-product-schema";
+import {
+  type ImageItem,
+  ProductImageGallery,
+} from "../admin/product-image-gallery";
 import { getColorHex } from "@/lib/color-map";
 import {
   NUMERIC_PRODUCT_SIZE_VALUES,
@@ -72,6 +77,7 @@ type ProductFormProduct = {
   sizeType: ProductSizeType;
   productSizes: ProductSizeModel[];
   variants: ProductFormVariant[];
+  images: Array<{ id: string; url: string; alt: string | null; position: number }>;
   primaryVariant: {
     id: string;
     name: string;
@@ -241,7 +247,20 @@ export function ProductForm({
       lengthCm: product?.lengthCm ?? null,
       deliveryDaysMin: product?.deliveryDaysMin ?? null,
       deliveryDaysMax: product?.deliveryDaysMax ?? null,
-      imageUrl: product?.primaryVariant?.imageUrl ?? "",
+      images: (() => {
+        if (product?.images?.length) {
+          return product.images.map((img) => ({
+            id: img.id,
+            url: img.url,
+            alt: img.alt ?? "",
+            position: img.position,
+          }));
+        }
+        if (product?.primaryVariant?.imageUrl) {
+          return [{ url: product.primaryVariant.imageUrl, alt: "", position: 0 }];
+        }
+        return [];
+      })(),
       videoUrl: product?.videoUrl ?? "",
       isVerified: product?.isVerified ?? false,
       sizeType: product?.sizeType ?? "alphabetic",
@@ -373,6 +392,29 @@ export function ProductForm({
 
   function onSubmit(values: AdminProductInput) {
     startTransition(async () => {
+      // 1. Upload new (local file) images first
+      const resolvedImages: ImageItem[] = [];
+      for (const img of values.images) {
+        const rawItem = img as ImageItem;
+        if (rawItem.isNew && rawItem.file) {
+          const formData = new FormData();
+          formData.append("file", rawItem.file);
+          const res = await fetch("/api/upload/product-image", {
+            method: "POST",
+            body: formData,
+          });
+          if (!res.ok) {
+            const err = (await res.json()) as { error?: string };
+            toast.error(err.error ?? "Erro ao fazer upload da imagem.");
+            return;
+          }
+          const { url } = (await res.json()) as { url: string };
+          resolvedImages.push({ ...rawItem, url, preview: undefined, file: undefined, isNew: false });
+        } else {
+          resolvedImages.push(rawItem);
+        }
+      }
+
       const action =
         mode === "create" ? createAdminProduct : updateAdminProduct;
       const currentVariantStocks = (form.getValues("variantStocks") ?? []).map(
@@ -394,8 +436,16 @@ export function ProductForm({
               (variantStock) => variantStock.variantId === primaryVariantId,
             )?.stock ?? values.variantStock
           : values.variantStock;
+
+      // 3. Save product
       const result = await action({
         ...values,
+        images: resolvedImages.map((img) => ({
+          id: img.id,
+          url: img.url,
+          alt: img.alt,
+          position: img.position,
+        })),
         variantStocks: currentVariantStocks,
         variantStock: primaryVariantStock,
       });
@@ -403,6 +453,20 @@ export function ProductForm({
       if (!result.success) {
         toast.error(result.message);
         return;
+      }
+
+      // 4. Upsert product_images table
+      const savedProductId = result.productId ?? product?.id;
+      if (savedProductId && resolvedImages.length > 0) {
+        await upsertProductImages({
+          productId: savedProductId,
+          images: resolvedImages.map((img) => ({
+            id: img.id,
+            url: img.url,
+            alt: img.alt || undefined,
+            position: img.position,
+          })),
+        });
       }
 
       toast.success(result.message);
@@ -1062,17 +1126,14 @@ export function ProductForm({
 
         <FormField
           control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
+          name="images"
+          render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Imagem</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <ImageIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                  <Input className="rounded-xl pl-9" {...field} />
-                </div>
-              </FormControl>
-              <FormMessage />
+              <ProductImageGallery
+                initialImages={(field.value as ImageItem[]) ?? []}
+                onChange={(imgs) => field.onChange(imgs)}
+                error={fieldState.error?.message}
+              />
             </FormItem>
           )}
         />

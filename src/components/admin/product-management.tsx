@@ -97,6 +97,7 @@ export type AdminCatalogProduct = {
   numberFieldEnabled: boolean;
   numberFieldPriceInCents: number;
   patchOptions: Array<{ id: string; label: string; imageUrl: string; priceInCents: number }> | null;
+  images: Array<{ id: string; url: string; alt: string | null; position: number }>;
   variantsCount: number;
   variants: Array<{
     id: string;

@@ -78,6 +78,13 @@
       "when": 1774293107268,
       "tag": "0010_messy_zuras",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1775499858255,
+      "tag": "0011_brainy_secret_warriors",
+      "breakpoints": true
     }
   ]
 }

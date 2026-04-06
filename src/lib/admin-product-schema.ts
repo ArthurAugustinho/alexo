@@ -100,7 +100,18 @@ export const adminProductSchema = z
     lengthCm: optionalPositiveIntegerSchema,
     deliveryDaysMin: optionalPositiveIntegerSchema,
     deliveryDaysMax: optionalPositiveIntegerSchema,
-    imageUrl: z.url("Informe uma URL de imagem valida."),
+    images: z
+      .array(
+        z.object({
+          id: z.uuid().optional(),
+          // Permite blob: URLs (previews locais antes do upload) e URLs reais
+          url: z.string().min(1, "Informe a URL da imagem."),
+          alt: z.string().max(200).optional(),
+          position: z.number().int().min(0),
+        }),
+      )
+      .min(1, "Adicione pelo menos uma imagem.")
+      .max(10, "Máximo de 10 imagens por produto."),
     videoUrl: z
       .string()
       .url("Informe uma URL de vídeo válida.")

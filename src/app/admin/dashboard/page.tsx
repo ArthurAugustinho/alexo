@@ -8,7 +8,7 @@ import {
   ProductManagement,
 } from "@/components/admin/product-management";
 import { db } from "@/db";
-import { categoryTable, productSizeTable, productTable, productVariantTable } from "@/db/schema";
+import { categoryTable, productImageTable, productSizeTable, productTable, productVariantTable } from "@/db/schema";
 import { requireAdminSession } from "@/lib/admin-auth";
 import { getAdminDashboardData } from "@/lib/admin-dashboard";
 
@@ -26,6 +26,9 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
           },
           variants: {
             orderBy: [asc(productVariantTable.createdAt)],
+          },
+          images: {
+            orderBy: [asc(productImageTable.position)],
           },
         },
       },
@@ -66,6 +69,12 @@ async function getCatalogByCategory(): Promise<AdminCatalogCategory[]> {
       numberFieldEnabled: product.numberFieldEnabled,
       numberFieldPriceInCents: product.numberFieldPriceInCents,
       patchOptions: product.patchOptions as Array<{ id: string; label: string; imageUrl: string; priceInCents: number }> | null,
+      images: product.images.map((img) => ({
+        id: img.id,
+        url: img.url,
+        alt: img.alt,
+        position: img.position,
+      })),
       variantsCount: product.variants.length,
       variants: product.variants.map((variant) => ({
         id: variant.id,
