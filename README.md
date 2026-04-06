@@ -1,6 +1,7 @@
 # Alexo Commerce
 
   <p>Plataforma de e-commerce premium de moda e vestuário</p>
+  <p>https://alexo-store.com.br/</p>
 
   ![Next.js](https://img.shields.io/badge/Next.js_15-black?style=for-the-badge&logo=next.js)
   ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
