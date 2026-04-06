@@ -10,7 +10,10 @@
       "Bash(node -e \":*)",
       "Bash(node -e ':*)",
       "Bash(npx eslint:*)",
-      "Bash(ls /c/My-Projects/alexo/src/components/admin/size-chart-manager*)"
+      "Bash(ls /c/My-Projects/alexo/src/components/admin/size-chart-manager*)",
+      "Bash(ls /c/My-Projects/alexo/src/app/icon*)",
+      "Bash(ls /c/My-Projects/alexo/src/app/favicon*)",
+      "Bash(ls /c/My-Projects/alexo/src/app/apple*)"
     ]
   }
 }

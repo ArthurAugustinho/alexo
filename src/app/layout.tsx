@@ -27,6 +27,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Alexo",
   description: "Moda e vestuário — descubra as últimas tendências na Alexo.",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default async function RootLayout({
