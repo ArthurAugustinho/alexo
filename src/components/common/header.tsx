@@ -66,8 +66,8 @@ export const Header = () => {
   }
 
   return (
-    <header className="px-5 py-6">
-      <div className="grid grid-cols-3 items-center">
+    <header className="min-h-[64px] px-4 py-6 md:px-5">
+      <div className="grid grid-cols-[auto_1fr_auto] items-center md:grid-cols-3">
 
         {/* Coluna esquerda — saudação (só logado, só desktop) */}
         <div className="flex items-center">
@@ -80,26 +80,18 @@ export const Header = () => {
         </div>
 
         {/* Coluna central — logo em texto */}
-        <div className="flex justify-center">
+        <div className="flex min-w-0 justify-center overflow-hidden">
           <Link href="/">
             <span
-              className={italiana.className}
+              className={`${italiana.className} inline-flex items-start whitespace-nowrap leading-none tracking-[4px] text-[28px] md:tracking-[14px] md:text-[52px]`}
               style={{
-                fontSize: "52px",
-                letterSpacing: "14px",
-                lineHeight: 1,
-                display: "inline-flex",
-                alignItems: "flex-start",
                 WebkitTextStroke: "0.6px currentColor",
               }}
             >
               A L E X O
               <span
+                className="mt-1 leading-none tracking-normal text-[10px] md:mt-[4px] md:text-[16px]"
                 style={{
-                  fontSize: "16px",
-                  letterSpacing: 0,
-                  lineHeight: 1,
-                  marginTop: "4px",
                   WebkitTextStroke: 0,
                 }}
               >
@@ -110,7 +102,7 @@ export const Header = () => {
         </div>
 
         {/* Coluna direita — ícones */}
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex shrink-0 items-center justify-end gap-1 md:gap-3">
         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <SheetTrigger asChild>
             <Button variant="outline" size="icon">
