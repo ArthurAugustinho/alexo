@@ -2,7 +2,6 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import Stripe from "stripe";
 
 import { db } from "@/db";
 import { orderTable, returnRequestTable } from "@/db/schema";
@@ -34,7 +33,7 @@ export async function completeReturnRequest(
     columns: { id: true, orderId: true, status: true },
     with: {
       order: {
-        columns: { id: true, stripePaymentIntentId: true },
+        columns: { id: true },
       },
     },
   });
@@ -51,20 +50,6 @@ export async function completeReturnRequest(
   }
 
   const now = new Date();
-
-  if (
-    request.order.stripePaymentIntentId &&
-    process.env.STRIPE_SECRET_KEY
-  ) {
-    try {
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-      await stripe.refunds.create({
-        payment_intent: request.order.stripePaymentIntentId,
-      });
-    } catch {
-      // Stripe refund failed — continue updating DB regardless
-    }
-  }
 
   await db
     .update(returnRequestTable)

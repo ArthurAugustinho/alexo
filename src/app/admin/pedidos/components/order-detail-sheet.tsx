@@ -117,7 +117,7 @@ export function OrderDetailSheet({
     toast.success("Endereço copiado!");
   }
 
-  function copyStripeId() {
+  function copyPaymentId() {
     if (!order?.stripePaymentIntentId) return;
     navigator.clipboard.writeText(order.stripePaymentIntentId);
     toast.success("ID copiado!");
@@ -416,7 +416,7 @@ export function OrderDetailSheet({
                         size="icon"
                         variant="ghost"
                         className="size-6 shrink-0"
-                        onClick={copyStripeId}
+                        onClick={copyPaymentId}
                       >
                         <ClipboardIcon className="size-3" />
                       </Button>

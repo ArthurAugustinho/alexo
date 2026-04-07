@@ -21,7 +21,7 @@ export default function PoliticaDePrivacidadePage() {
         <p>
           Coletamos apenas os dados necessários para processar seus pedidos:
           nome, e-mail, endereço de entrega e informações de pagamento
-          processadas com segurança pelo Stripe.
+          processadas com segurança pelo nosso provedor de pagamento.
         </p>
 
         <h2>Uso dos dados</h2>

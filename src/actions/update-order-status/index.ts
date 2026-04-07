@@ -2,7 +2,6 @@
 
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import Stripe from "stripe";
 
 import { db } from "@/db";
 import { orderTable } from "@/db/schema";
@@ -34,28 +33,11 @@ export async function updateOrderStatus(
 
   const order = await db.query.orderTable.findFirst({
     where: eq(orderTable.id, orderId),
-    columns: { id: true, stripePaymentIntentId: true },
+    columns: { id: true },
   });
 
   if (!order) {
     return { success: false, message: "Pedido não encontrado." };
-  }
-
-  if (status === "refunded" && order.stripePaymentIntentId) {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return { success: false, message: "Configuração do Stripe ausente." };
-    }
-    try {
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-      await stripe.refunds.create({
-        payment_intent: order.stripePaymentIntentId,
-      });
-    } catch {
-      return {
-        success: false,
-        message: "Erro ao processar reembolso no Stripe.",
-      };
-    }
   }
 
   const now = new Date();

@@ -50,8 +50,7 @@ export function CompleteReturnDialog({
           <AlertDialogTitle>Confirmar conclusão da devolução</AlertDialogTitle>
           <AlertDialogDescription>
             Isso marcará a devolução como concluída e o pedido como reembolsado.
-            Se houver um pagamento Stripe vinculado, o reembolso será
-            processado automaticamente.
+            O reembolso deverá ser processado manualmente no provedor de pagamento.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
