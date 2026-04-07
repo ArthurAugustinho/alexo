@@ -1,0 +1,1 @@
+ALTER TABLE "order" ADD COLUMN "mp_payment_id" varchar(100);

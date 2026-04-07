@@ -522,6 +522,7 @@ export const orderTable = pgTable("order", {
   discountType: varchar("discount_type", { length: 20 }),
   status: orderStatus().notNull().default("pending"),
   stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  mpPaymentId: varchar("mp_payment_id", { length: 100 }),
   trackingCode: varchar("tracking_code", { length: 100 }),
   trackingUrl: varchar("tracking_url", { length: 500 }),
   shippedAt: timestamp("shipped_at"),
