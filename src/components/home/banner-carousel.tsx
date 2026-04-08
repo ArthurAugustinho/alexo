@@ -94,13 +94,10 @@ export function BannerCarousel({
                     sizes="100vw"
                     className="object-cover"
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,9,11,0.82),rgba(9,9,11,0.18))]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,9,11,0.62),rgba(9,9,11,0.08))]" />
 
                   <div className="absolute inset-x-0 bottom-0 flex h-full items-end p-6 md:p-10">
                     <div className="max-w-xl space-y-3 text-white">
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/75">
-                        Campanha sazonal
-                      </p>
                       <h2 className="text-2xl font-semibold md:text-4xl">
                         {banner.title}
                       </h2>
