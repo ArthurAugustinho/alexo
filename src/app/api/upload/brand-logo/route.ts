@@ -8,6 +8,7 @@ const ALLOWED_MIME_TYPES: Record<string, string> = {
   "image/svg+xml": ".svg",
   "image/png": ".png",
   "image/jpeg": ".jpg",
+  "image/webp": ".webp",
 };
 
 const MAX_SIZE = 2 * 1024 * 1024;
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const ext = ALLOWED_MIME_TYPES[file.type];
   if (!ext) {
     return NextResponse.json(
-      { error: "Formato inválido. Use SVG, PNG ou JPG." },
+      { error: "Formato inválido. Use SVG, PNG, JPG ou WebP." },
       { status: 400 },
     );
   }

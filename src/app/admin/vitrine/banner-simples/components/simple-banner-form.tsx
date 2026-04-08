@@ -43,7 +43,7 @@ type SimpleBannerFormProps = {
 };
 
 const ACCEPTED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
-const MAX_SIZE = 3 * 1024 * 1024;
+const MAX_SIZE = 2 * 1024 * 1024;
 
 export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
   const [isPending, startTransition] = useTransition();
@@ -73,7 +73,7 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
     }
 
     if (file.size > MAX_SIZE) {
-      toast.error("Arquivo muito grande. Máximo 3MB.");
+      toast.error("Arquivo muito grande. Máximo 2MB.");
       e.target.value = "";
       return;
     }
@@ -154,9 +154,20 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
                           Enviando...
                         </>
                       ) : (
-                        "Selecionar imagem (PNG, JPG — máx. 3MB)"
+                        "Selecionar imagem"
                       )}
                     </Button>
+                    <div className="space-y-0.5">
+                      <p className="text-muted-foreground text-sm">
+                        Tamanho recomendado: 1440 × 200px
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        Tamanho máximo do arquivo: 2MB
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        Formatos aceitos: JPG, PNG ou WebP
+                      </p>
+                    </div>
                     {uploadError && (
                       <p className="text-destructive text-sm">{uploadError}</p>
                     )}
@@ -177,7 +188,7 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
           />
 
           {watchedImageUrl && (
-            <div className="h-[60px] w-full overflow-hidden rounded-lg border">
+            <div className="h-[200px] w-full overflow-hidden rounded-lg border">
               <div
                 className="h-full w-full"
                 style={{
@@ -190,7 +201,7 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
           )}
 
           {!watchedImageUrl && (
-            <div className="flex h-[60px] w-full items-center justify-center rounded-lg border bg-muted/20">
+            <div className="flex h-[200px] w-full items-center justify-center rounded-lg border bg-muted/20">
               <ImageIcon className="text-muted-foreground size-5" />
             </div>
           )}

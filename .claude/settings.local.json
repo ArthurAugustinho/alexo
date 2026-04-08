@@ -13,7 +13,8 @@
       "Bash(ls /c/My-Projects/alexo/src/components/admin/size-chart-manager*)",
       "Bash(ls /c/My-Projects/alexo/src/app/icon*)",
       "Bash(ls /c/My-Projects/alexo/src/app/favicon*)",
-      "Bash(ls /c/My-Projects/alexo/src/app/apple*)"
+      "Bash(ls /c/My-Projects/alexo/src/app/apple*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

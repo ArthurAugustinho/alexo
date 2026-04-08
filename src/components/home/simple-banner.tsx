@@ -9,7 +9,7 @@ export function SimpleBanner({ banner }: { banner: SimpleBanner | null }) {
     <div className="w-full">
       {banner.linkUrl ? (
         <a href={banner.linkUrl} className="block w-full">
-          <div className="relative h-[100px] w-full overflow-hidden">
+          <div className="relative h-[200px] w-full overflow-hidden">
             <Image
               src={banner.imageUrl}
               alt="Banner"
@@ -22,7 +22,7 @@ export function SimpleBanner({ banner }: { banner: SimpleBanner | null }) {
           </div>
         </a>
       ) : (
-        <div className="relative h-[100px] w-full overflow-hidden">
+        <div className="relative h-[200px] w-full overflow-hidden">
           <Image
             src={banner.imageUrl}
             alt="Banner"
