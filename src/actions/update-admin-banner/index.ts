@@ -59,6 +59,7 @@ export async function updateAdminBanner(
     .update(seasonalBannerTable)
     .set({
       imageUrl: payload.data.imageUrl,
+      mobileImageUrl: payload.data.mobileImageUrl || null,
       title: payload.data.title,
       subtitle: payload.data.subtitle,
       linkUrl: payload.data.linkUrl,

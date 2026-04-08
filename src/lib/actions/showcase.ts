@@ -46,6 +46,7 @@ export async function createAdminBanner(
   const now = new Date();
   await db.insert(seasonalBannerTable).values({
     imageUrl: payload.data.imageUrl,
+    mobileImageUrl: payload.data.mobileImageUrl || null,
     title: payload.data.title,
     subtitle: payload.data.subtitle,
     linkUrl: payload.data.linkUrl,
@@ -92,6 +93,7 @@ export async function updateAdminBanner(
     .update(seasonalBannerTable)
     .set({
       imageUrl: payload.data.imageUrl,
+      mobileImageUrl: payload.data.mobileImageUrl || null,
       title: payload.data.title,
       subtitle: payload.data.subtitle,
       linkUrl: payload.data.linkUrl,

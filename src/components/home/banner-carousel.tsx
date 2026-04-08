@@ -85,14 +85,24 @@ export function BannerCarousel({
                 rel={isExternalLink ? "noreferrer" : undefined}
                 className="relative block min-w-full"
               >
-                <div className="relative h-[420px] md:h-[480px]">
+                <div className="relative h-[500px] md:h-[480px]">
+                  {/* Imagem desktop — oculta no mobile */}
                   <Image
                     src={banner.imageUrl}
                     alt={`${banner.title} — ${banner.subtitle}`}
                     fill
                     priority={index === 0}
                     sizes="100vw"
-                    className="object-cover"
+                    className="hidden object-cover md:block"
+                  />
+                  {/* Imagem mobile — usa mobileImageUrl se disponível, senão fallback desktop */}
+                  <Image
+                    src={banner.mobileImageUrl ?? banner.imageUrl}
+                    alt={`${banner.title} — ${banner.subtitle}`}
+                    fill
+                    priority={index === 0}
+                    sizes="100vw"
+                    className="block object-cover md:hidden"
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,9,11,0.62),rgba(9,9,11,0.08))]" />
 

@@ -109,6 +109,7 @@ export const verificationTable = pgTable("verification", {
 export const seasonalBannerTable = pgTable("seasonal_banner", {
   id: uuid().primaryKey().defaultRandom(),
   imageUrl: text("image_url").notNull(),
+  mobileImageUrl: text("mobile_image_url"),
   title: text().notNull(),
   subtitle: text().notNull(),
   linkUrl: text("link_url").notNull(),

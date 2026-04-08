@@ -1,0 +1,1 @@
+ALTER TABLE "seasonal_banner" ADD COLUMN "mobile_image_url" text;

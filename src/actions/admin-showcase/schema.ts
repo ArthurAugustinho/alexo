@@ -16,6 +16,14 @@ export const adminBannerSchema = z
       .trim()
       .min(1, "Informe a imagem do banner.")
       .refine(isInternalOrExternalUrl, "Informe uma URL de imagem válida."),
+    mobileImageUrl: z
+      .string()
+      .trim()
+      .refine(
+        (val) => val === "" || isInternalOrExternalUrl(val),
+        "Informe uma URL de imagem válida.",
+      )
+      .optional(),
     title: z.string("Título inválido.").trim().min(1, "Informe o título."),
     subtitle: z
       .string("Subtítulo inválido.")
@@ -65,6 +73,7 @@ export const reorderFeaturedProductsSchema = z.object({
 export const adminBannerListItemSchema = z.object({
   id: z.uuid(),
   imageUrl: z.string().trim().min(1),
+  mobileImageUrl: z.string().nullable().optional(),
   title: z.string().trim().min(1),
   subtitle: z.string().trim().min(1),
   linkUrl: z.string().trim().min(1),

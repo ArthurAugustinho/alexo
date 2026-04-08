@@ -50,6 +50,7 @@ export async function getActiveSeasonalBanners(
     .select({
       id: seasonalBannerTable.id,
       imageUrl: seasonalBannerTable.imageUrl,
+      mobileImageUrl: seasonalBannerTable.mobileImageUrl,
       title: seasonalBannerTable.title,
       subtitle: seasonalBannerTable.subtitle,
       linkUrl: seasonalBannerTable.linkUrl,

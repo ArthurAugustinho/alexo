@@ -124,12 +124,19 @@ function BannerEditorDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
   const { upload, isUploading, error: uploadError } = useUploadBrandLogo();
+  const {
+    upload: uploadMobile,
+    isUploading: isUploadingMobile,
+    error: uploadMobileError,
+  } = useUploadBrandLogo();
 
   const defaultValues = useMemo<AdminBannerFormValues>(
     () => ({
       bannerId: banner?.id,
       imageUrl: banner?.imageUrl ?? "",
+      mobileImageUrl: banner?.mobileImageUrl ?? "",
       title: banner?.title ?? "",
       subtitle: banner?.subtitle ?? "",
       linkUrl: banner?.linkUrl ?? "",
@@ -149,8 +156,9 @@ function BannerEditorDialog({
   }, [defaultValues, form]);
 
   const watchedImageUrl = form.watch("imageUrl");
+  const watchedMobileImageUrl = form.watch("mobileImageUrl");
 
-  const ACCEPTED_MIME_TYPES = ["image/svg+xml", "image/png", "image/jpeg"];
+  const ACCEPTED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp"];
   const MAX_SIZE = 2 * 1024 * 1024;
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -158,7 +166,7 @@ function BannerEditorDialog({
     if (!file) return;
 
     if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
-      toast.error("Formato inválido. Use SVG, PNG ou JPG.");
+      toast.error("Formato inválido. Use PNG, JPG ou WebP.");
       e.target.value = "";
       return;
     }
@@ -174,6 +182,30 @@ function BannerEditorDialog({
       form.setValue("imageUrl", url, { shouldValidate: true });
     } else {
       toast.error(uploadError ?? "Falha no upload.");
+    }
+  }
+
+  async function handleMobileFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      toast.error("Formato inválido. Use PNG, JPG ou WebP.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_SIZE) {
+      toast.error("Arquivo muito grande. Máximo 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const url = await uploadMobile(file);
+    if (url) {
+      form.setValue("mobileImageUrl", url, { shouldValidate: true });
+    } else {
+      toast.error(uploadMobileError ?? "Falha no upload.");
     }
   }
 
@@ -322,26 +354,133 @@ function BannerEditorDialog({
                   </Tabs>
 
                   <FormMessage />
-
-                  <div className="relative aspect-video w-full overflow-hidden rounded-2xl border bg-muted/30">
-                    {watchedImageUrl ? (
-                      <div
-                        className="h-full w-full"
-                        style={{
-                          backgroundImage: `url(${watchedImageUrl})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <ImageIcon className="text-muted-foreground size-8" />
-                      </div>
-                    )}
-                  </div>
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="mobileImageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Imagem Mobile (opcional)</FormLabel>
+
+                  <Tabs defaultValue="upload">
+                    <TabsList className="w-full">
+                      <TabsTrigger value="upload" className="flex-1">
+                        Upload de arquivo
+                      </TabsTrigger>
+                      <TabsTrigger value="url" className="flex-1">
+                        URL externa
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="upload" className="mt-3 space-y-2">
+                      <input
+                        ref={mobileFileInputRef}
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.webp"
+                        className="hidden"
+                        onChange={handleMobileFileChange}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-xl"
+                        disabled={isUploadingMobile}
+                        onClick={() => mobileFileInputRef.current?.click()}
+                      >
+                        {isUploadingMobile ? (
+                          <>
+                            <Loader2Icon className="size-4 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          "Selecionar imagem mobile"
+                        )}
+                      </Button>
+                      <div className="space-y-0.5">
+                        <p className="text-muted-foreground text-sm">
+                          Tamanho recomendado: 750 × 900px — formato vertical
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          Se não enviada, a imagem desktop será usada como
+                          fallback no mobile
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          Formatos aceitos: JPG, PNG ou WebP — máx. 2MB
+                        </p>
+                      </div>
+                      {uploadMobileError && (
+                        <p className="text-destructive text-sm">
+                          {uploadMobileError}
+                        </p>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="url" className="mt-3">
+                      <Input
+                        className="rounded-xl"
+                        placeholder="https://..."
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    </TabsContent>
+                  </Tabs>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Previews lado a lado */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <p className="text-muted-foreground text-xs font-medium">
+                  Desktop
+                </p>
+                <div className="relative aspect-video w-full overflow-hidden rounded-2xl border bg-muted/30">
+                  {watchedImageUrl ? (
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        backgroundImage: `url(${watchedImageUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <ImageIcon className="text-muted-foreground size-6" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-muted-foreground text-xs font-medium">
+                  Mobile
+                </p>
+                <div className="relative h-[160px] w-[120px] overflow-hidden rounded-2xl border bg-muted/30">
+                  {watchedMobileImageUrl ? (
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        backgroundImage: `url(${watchedMobileImageUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <ImageIcon className="text-muted-foreground size-6" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             <div className="grid gap-5 md:grid-cols-2">
               <FormField

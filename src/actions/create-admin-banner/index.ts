@@ -40,6 +40,7 @@ export async function createAdminBanner(
 
   await db.insert(seasonalBannerTable).values({
     imageUrl: payload.data.imageUrl,
+    mobileImageUrl: payload.data.mobileImageUrl || null,
     title: payload.data.title,
     subtitle: payload.data.subtitle,
     linkUrl: payload.data.linkUrl,

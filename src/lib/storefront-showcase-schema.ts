@@ -23,6 +23,7 @@ export const seasonalBannerSchema = z.object({
     .trim()
     .min(1)
     .refine(isValidBannerImageUrl, "Imagem do banner inválida."),
+  mobileImageUrl: z.string().nullable().optional(),
   title: z.string().trim().min(1),
   subtitle: z.string().trim().min(1),
   linkUrl: z
