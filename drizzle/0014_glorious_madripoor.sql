@@ -1,0 +1,1 @@
+ALTER TABLE "simple_banners" ADD COLUMN "mobile_image_url" varchar(500);

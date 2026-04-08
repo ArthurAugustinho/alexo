@@ -32,6 +32,7 @@ export async function updateSimpleBanner(
     .update(simpleBannerTable)
     .set({
       imageUrl: payload.data.imageUrl,
+      mobileImageUrl: payload.data.mobileImageUrl || null,
       linkUrl: payload.data.linkUrl || null,
       isActive: payload.data.isActive,
       updatedAt: new Date(),

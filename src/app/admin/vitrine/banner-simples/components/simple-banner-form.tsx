@@ -31,6 +31,7 @@ import type { SimpleBanner } from "@/lib/queries/simple-banner";
 
 const formSchema = z.object({
   imageUrl: z.string().min(1, "Informe a URL da imagem."),
+  mobileImageUrl: z.string().optional(),
   linkUrl: z.string().url("URL inválida.").or(z.literal("")).optional(),
   isActive: z.boolean(),
 });
@@ -48,19 +49,27 @@ const MAX_SIZE = 2 * 1024 * 1024;
 export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
   const [isPending, startTransition] = useTransition();
   const { upload, isUploading, error: uploadError } = useUploadBrandLogo();
+  const {
+    upload: uploadMobile,
+    isUploading: isUploadingMobile,
+    error: uploadMobileError,
+  } = useUploadBrandLogo();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mobileFileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = Boolean(banner);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       imageUrl: banner?.imageUrl ?? "",
+      mobileImageUrl: banner?.mobileImageUrl ?? "",
       linkUrl: banner?.linkUrl ?? "",
       isActive: banner?.isActive ?? true,
     },
   });
 
   const watchedImageUrl = form.watch("imageUrl");
+  const watchedMobileImageUrl = form.watch("mobileImageUrl");
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -83,6 +92,30 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
       form.setValue("imageUrl", url, { shouldValidate: true });
     } else {
       toast.error(uploadError ?? "Falha no upload.");
+    }
+  }
+
+  async function handleMobileFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!ACCEPTED_MIME_TYPES.includes(file.type)) {
+      toast.error("Formato inválido. Use PNG, JPG ou WebP.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_SIZE) {
+      toast.error("Arquivo muito grande. Máximo 2MB.");
+      e.target.value = "";
+      return;
+    }
+
+    const url = await uploadMobile(file);
+    if (url) {
+      form.setValue("mobileImageUrl", url, { shouldValidate: true });
+    } else {
+      toast.error(uploadMobileError ?? "Falha no upload.");
     }
   }
 
@@ -118,12 +151,13 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Imagem Desktop */}
           <FormField
             control={form.control}
             name="imageUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Imagem</FormLabel>
+                <FormLabel>Imagem Desktop</FormLabel>
                 <Tabs defaultValue="upload">
                   <TabsList className="w-full">
                     <TabsTrigger value="upload" className="flex-1">
@@ -187,24 +221,122 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
             )}
           />
 
-          {watchedImageUrl && (
-            <div className="h-[200px] w-full overflow-hidden rounded-lg border">
-              <div
-                className="h-full w-full"
-                style={{
-                  backgroundImage: `url(${watchedImageUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-            </div>
-          )}
+          {/* Imagem Mobile */}
+          <FormField
+            control={form.control}
+            name="mobileImageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Imagem Mobile (opcional)</FormLabel>
+                <Tabs defaultValue="upload">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="upload" className="flex-1">
+                      Upload
+                    </TabsTrigger>
+                    <TabsTrigger value="url" className="flex-1">
+                      URL externa
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="upload" className="mt-3 space-y-2">
+                    <input
+                      ref={mobileFileInputRef}
+                      type="file"
+                      accept=".png,.jpg,.jpeg,.webp"
+                      className="hidden"
+                      onChange={handleMobileFileChange}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      disabled={isUploadingMobile}
+                      onClick={() => mobileFileInputRef.current?.click()}
+                    >
+                      {isUploadingMobile ? (
+                        <>
+                          <Loader2Icon className="size-4 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        "Selecionar imagem mobile"
+                      )}
+                    </Button>
+                    <div className="space-y-0.5">
+                      <p className="text-muted-foreground text-sm">
+                        Tamanho recomendado: 750 × 200px — formato horizontal
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        Mesma proporção do desktop, otimizada para telas
+                        menores. Se não enviada, a imagem desktop será usada
+                        como fallback.
+                      </p>
+                      <p className="text-muted-foreground text-sm">
+                        Formatos aceitos: JPG, PNG ou WebP — máx. 2MB
+                      </p>
+                    </div>
+                    {uploadMobileError && (
+                      <p className="text-destructive text-sm">
+                        {uploadMobileError}
+                      </p>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="url" className="mt-3">
+                    <Input
+                      placeholder="https://cdn.exemplo.com/banner-mobile.jpg"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  </TabsContent>
+                </Tabs>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          {!watchedImageUrl && (
-            <div className="flex h-[200px] w-full items-center justify-center rounded-lg border bg-muted/20">
-              <ImageIcon className="text-muted-foreground size-5" />
+          {/* Previews empilhados */}
+          <div className="space-y-2">
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-xs font-medium">
+                Desktop (1440 × 200px)
+              </p>
+              <div className="flex h-[80px] w-full items-center justify-center overflow-hidden rounded-lg border bg-muted/20">
+                {watchedImageUrl ? (
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      backgroundImage: `url(${watchedImageUrl})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  />
+                ) : (
+                  <ImageIcon className="text-muted-foreground size-5" />
+                )}
+              </div>
             </div>
-          )}
+
+            <div className="space-y-1">
+              <p className="text-muted-foreground text-xs font-medium">
+                Mobile (750 × 200px)
+              </p>
+              <div className="flex h-[80px] w-full items-center justify-center overflow-hidden rounded-lg border bg-muted/20">
+                {watchedMobileImageUrl ? (
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      backgroundImage: `url(${watchedMobileImageUrl})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  />
+                ) : (
+                  <ImageIcon className="text-muted-foreground size-5" />
+                )}
+              </div>
+            </div>
+          </div>
 
           <FormField
             control={form.control}
@@ -245,7 +377,7 @@ export function SimpleBannerForm({ banner, onSuccess }: SimpleBannerFormProps) {
           <Button
             type="submit"
             className="w-full"
-            disabled={isPending || isUploading}
+            disabled={isPending || isUploading || isUploadingMobile}
           >
             {isPending
               ? "Salvando..."

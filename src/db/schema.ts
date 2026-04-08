@@ -924,6 +924,7 @@ export const returnRequestRelations = relations(
 export const simpleBannerTable = pgTable("simple_banners", {
   id: uuid().primaryKey().defaultRandom(),
   imageUrl: varchar("image_url", { length: 500 }).notNull(),
+  mobileImageUrl: varchar("mobile_image_url", { length: 500 }),
   linkUrl: varchar("link_url", { length: 500 }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),

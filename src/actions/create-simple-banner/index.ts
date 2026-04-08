@@ -31,6 +31,7 @@ export async function createSimpleBanner(
 
   await db.insert(simpleBannerTable).values({
     imageUrl: payload.data.imageUrl,
+    mobileImageUrl: payload.data.mobileImageUrl || null,
     linkUrl: payload.data.linkUrl || null,
     isActive: payload.data.isActive,
     createdAt: now,

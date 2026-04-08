@@ -8,6 +8,13 @@ export const createSimpleBannerSchema = z.object({
       (val) => val.startsWith("/uploads/") || val.startsWith("http"),
       { message: "URL inválida." },
     ),
+  mobileImageUrl: z
+    .string()
+    .refine(
+      (val) => val === "" || val.startsWith("/uploads/") || val.startsWith("http"),
+      { message: "URL inválida." },
+    )
+    .optional(),
   linkUrl: z.string().url("URL inválida.").or(z.literal("")).optional(),
   isActive: z.boolean().default(true),
 });
