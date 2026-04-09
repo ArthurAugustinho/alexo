@@ -108,12 +108,14 @@ export function BannerCarousel({
 
                   <div className="absolute inset-x-0 bottom-0 flex h-full items-end p-6 md:p-10">
                     <div className="max-w-xl space-y-3 text-white">
-                      <h2 className="text-2xl font-semibold md:text-4xl">
-                        {banner.title}
-                      </h2>
-                      <p className="max-w-lg text-sm text-white/80 md:text-base">
-                        {banner.subtitle}
-                      </p>
+                      <div className="hidden md:block">
+                        <h2 className="text-2xl font-semibold md:text-4xl">
+                          {banner.title}
+                        </h2>
+                        <p className="max-w-lg text-sm text-white/80 md:text-base">
+                          {banner.subtitle}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
