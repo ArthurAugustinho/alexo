@@ -2,42 +2,32 @@
 
 import { useMutation } from "@tanstack/react-query";
 
-export type ProductImportResult = {
-  productName: string;
-  status: "imported" | "skipped" | "failed";
-  variantsCount?: number;
-  message?: string;
-};
+import { importProducts } from "@/actions/import-products";
+import type { ImportError } from "@/app/api/admin/import-products/route";
 
-export type ImportProductsResponse = {
+export type { ImportError };
+
+export type ImportProductsSuccess = {
+  success: true;
   imported: number;
-  skipped: number;
-  failed: number;
-  results: ProductImportResult[];
+  errors: ImportError[];
 };
 
-export const getImportProductsMutationKey = () => ["import-products"];
+export const getImportProductsMutationKey = () => ["import-products"] as const;
 
 export const useImportProducts = () =>
   useMutation({
     mutationKey: getImportProductsMutationKey(),
-    mutationFn: async (file: File): Promise<ImportProductsResponse> => {
+    mutationFn: async (file: File): Promise<ImportProductsSuccess> => {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/admin/import-products", {
-        method: "POST",
-        body: formData,
-      });
+      const result = await importProducts(formData);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          (data as { error?: string }).error ?? "Erro ao importar produtos.",
-        );
+      if (!result.success) {
+        throw new Error(result.message);
       }
 
-      return data as ImportProductsResponse;
+      return result;
     },
   });

@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 
 export function DownloadTemplateButton() {
   return (
-    <Button variant="outline" size="sm" asChild>
-      <a href="/templates/produtos-template.csv" download>
+    <Button variant="outline" asChild>
+      <a href="/templates/alexo_importacao_v2.xlsx" download>
         <DownloadIcon className="size-4" />
-        Baixar template CSV
+        Baixar planilha template
       </a>
     </Button>
   );
