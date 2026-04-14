@@ -1,4 +1,4 @@
-import { ExternalLinkIcon, PackageIcon, RotateCcwIcon, Settings2Icon, StarIcon, StoreIcon, TagIcon } from "lucide-react";
+import { ExternalLinkIcon, PackageIcon, RotateCcwIcon, Settings2Icon, StarIcon, StoreIcon, TagIcon, UploadIcon } from "lucide-react";
 import Link from "next/link";
 
 import { AdminSignOutButton } from "@/components/admin/admin-sign-out-button";
@@ -70,6 +70,12 @@ export async function AdminShell({ children, user, role }: AdminShellProps) {
                     </Link>
                   </Button>
                 ) : null}
+                <Button asChild variant="outline">
+                  <Link href="/admin/produtos/importar">
+                    <UploadIcon />
+                    Importar
+                  </Link>
+                </Button>
                 <Button asChild variant="outline">
                   <Link href="/admin/pedidos">
                     <PackageIcon />

@@ -1,0 +1,6 @@
+categoria_slug,produto_nome,produto_descricao,produto_marca,tipo_tamanho,preco,cor,tamanho,url_imagem,estoque
+camisetas,Camiseta Básica Premium,Camiseta de algodão premium com caimento perfeito.,Alexo,alfabetico,89.90,Branco,P,https://cdn.exemplo.com/camiseta-branca-p.jpg,15
+camisetas,Camiseta Básica Premium,Camiseta de algodão premium com caimento perfeito.,Alexo,alfabetico,89.90,Branco,M,https://cdn.exemplo.com/camiseta-branca-m.jpg,20
+camisetas,Camiseta Básica Premium,Camiseta de algodão premium com caimento perfeito.,Alexo,alfabetico,89.90,Preto,M,https://cdn.exemplo.com/camiseta-preta-m.jpg,12
+vestidos,Vestido Floral Midi,Vestido midi com estampa floral e tecido leve ideal para o verão.,Alexo,alfabetico,149.90,Rosa,M,https://cdn.exemplo.com/vestido-floral-m.jpg,8
+vestidos,Vestido Floral Midi,Vestido midi com estampa floral e tecido leve ideal para o verão.,Alexo,alfabetico,149.90,Rosa,G,https://cdn.exemplo.com/vestido-floral-g.jpg,5
