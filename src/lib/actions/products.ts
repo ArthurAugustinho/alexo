@@ -1,6 +1,6 @@
 "use server";
 
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
@@ -17,10 +17,7 @@ import {
   type DeleteAdminProductInput,
   deleteAdminProductSchema,
 } from "@/lib/admin-product-schema";
-import {
-  PRODUCT_VARIANT_SIZE_VALUES,
-  type ProductSizeType,
-} from "@/lib/product-variant-schema";
+import { type ProductSizeType } from "@/lib/product-variant-schema";
 import { generateSlug } from "@/lib/slug";
 
 type AdminProductActionResult = {
@@ -42,46 +39,6 @@ function normalizeProductSizes(productSizes: string[]) {
   );
 }
 
-function normalizeVariantStocks(
-  variantStocks: AdminProductInput["variantStocks"],
-) {
-  return Array.from(
-    new Map(
-      variantStocks.map((variantStock) => [
-        variantStock.variantId ??
-          `${variantStock.color.trim().toLowerCase()}::${variantStock.size.trim()}`,
-        {
-          variantId: variantStock.variantId,
-          color: variantStock.color.trim(),
-          size: variantStock.size.trim(),
-          stock: variantStock.stock,
-          imageUrl: variantStock.imageUrl.trim(),
-        },
-      ]),
-    ).values(),
-  );
-}
-
-function getDefaultVariantSize(params: {
-  sizeType: ProductSizeType;
-  productSizes: string[];
-  fallbackSize?: string | null;
-}) {
-  if (params.sizeType === "numeric") {
-    return params.productSizes[0] ?? params.fallbackSize ?? "33";
-  }
-
-  if (
-    params.fallbackSize &&
-    PRODUCT_VARIANT_SIZE_VALUES.includes(
-      params.fallbackSize as (typeof PRODUCT_VARIANT_SIZE_VALUES)[number],
-    )
-  ) {
-    return params.fallbackSize;
-  }
-
-  return "M";
-}
 
 async function getUniqueProductSlug(name: string, excludeProductId?: string) {
   const baseSlug = generateSlug(name) || "produto";
@@ -344,33 +301,11 @@ export async function updateAdminProduct(
     };
   }
 
-  const primaryVariant =
-    existingProduct.variants.find(
-      (variant) => variant.id === payload.data.primaryVariantId,
-    ) ?? existingProduct.variants[0];
-
   const normalizedProductSizes = normalizeProductSizes(payload.data.productSizes);
-  const normalizedVariantStocks = normalizeVariantStocks(
-    payload.data.variantStocks,
-  );
   const productSlug =
     existingProduct.name === payload.data.name
       ? existingProduct.slug
       : await getUniqueProductSlug(payload.data.name, existingProduct.id);
-  const primaryVariantSize = getDefaultVariantSize({
-    sizeType: payload.data.sizeType,
-    productSizes: normalizedProductSizes,
-    fallbackSize: primaryVariant?.size ?? existingProduct.productSizes[0]?.sizeValue,
-  });
-  const variantSlug =
-    primaryVariant &&
-    primaryVariant.color === payload.data.variantColor &&
-    primaryVariant.name === payload.data.variantName
-      ? primaryVariant.slug
-      : await getUniqueVariantSlug(
-          `${payload.data.name}-${payload.data.variantColor}`,
-          primaryVariant?.id,
-        );
   const updateBasePriceInCents = Math.round(payload.data.priceInReais * 100);
   const updateDiscountPercent = payload.data.discountPercent ?? null;
   const updateOriginalPriceInCents = updateDiscountPercent
@@ -380,6 +315,69 @@ export async function updateAdminProduct(
     ? Math.round(updateBasePriceInCents * (1 - updateDiscountPercent / 100))
     : updateBasePriceInCents;
   const updateIsOnSale = Boolean(updateDiscountPercent);
+
+  // Build variant ops (update existing / insert new) before opening the transaction
+  const existingVariantById = new Map(
+    existingProduct.variants.map((v) => [v.id, v]),
+  );
+  // Track all existing slugs so inserts don't collide
+  const usedVariantSlugs = new Set<string>(
+    existingProduct.variants.map((v) => v.slug),
+  );
+
+  type VariantUpdateOp = {
+    type: "update";
+    variantId: string;
+    cor: string;
+    tamanho: string;
+    estoque: number;
+    imageUrl: string;
+  };
+  type VariantInsertOp = {
+    type: "insert";
+    cor: string;
+    tamanho: string;
+    estoque: number;
+    imageUrl: string;
+    slug: string;
+  };
+
+  const variantOps: Array<VariantUpdateOp | VariantInsertOp> = [];
+  const primaryImageUrl = payload.data.images[0]?.url ?? "";
+
+  for (const variante of payload.data.variantes) {
+    const existing = variante.id
+      ? existingVariantById.get(variante.id)
+      : undefined;
+
+    if (existing) {
+      variantOps.push({
+        type: "update",
+        variantId: existing.id,
+        cor: variante.cor,
+        tamanho: variante.tamanho,
+        estoque: variante.estoque,
+        imageUrl: variante.imageUrl || existing.imageUrl,
+      });
+      continue;
+    }
+
+    const slug = await getUniqueVariantSlug(
+      generateVariantSlug(productSlug, variante.cor, variante.tamanho),
+      undefined,
+      usedVariantSlugs,
+    );
+    usedVariantSlugs.add(slug);
+
+    variantOps.push({
+      type: "insert",
+      cor: variante.cor,
+      tamanho: variante.tamanho,
+      estoque: variante.estoque,
+      imageUrl: variante.imageUrl || primaryImageUrl,
+      slug,
+    });
+  }
 
   let updatedVariantsCount = 0;
   let createdVariantsCount = 0;
@@ -437,118 +435,38 @@ export async function updateAdminProduct(
       tx,
     });
 
-    const updatePrimaryImageUrl = payload.data.images[0]?.url ?? "";
+    for (const op of variantOps) {
+      if (op.type === "update") {
+        await tx
+          .update(productVariantTable)
+          .set({
+            name: op.cor,
+            color: op.cor,
+            size: op.tamanho,
+            stock: op.estoque,
+            imageUrl: op.imageUrl,
+            priceInCents: updateFinalPriceInCents,
+            isAvailable: op.estoque > 0,
+          })
+          .where(eq(productVariantTable.id, op.variantId));
 
-    if (primaryVariant) {
-      await tx
-        .update(productVariantTable)
-        .set({
-          name: payload.data.variantName,
-          color: payload.data.variantColor,
-          imageUrl: updatePrimaryImageUrl,
-          priceInCents: updateFinalPriceInCents,
-          slug: variantSlug,
-          size: primaryVariantSize,
-          stock: payload.data.variantStock,
-          isAvailable: payload.data.variantStock > 0,
-        })
-        .where(eq(productVariantTable.id, primaryVariant.id));
-
-      updatedVariantsCount += 1;
-
-      for (const variantStock of normalizedVariantStocks) {
-        const matchesPrimaryVariant =
-          variantStock.variantId === primaryVariant.id ||
-          (variantStock.color.trim().toLowerCase() ===
-            payload.data.variantColor.trim().toLowerCase() &&
-            variantStock.size === primaryVariantSize);
-
-        if (matchesPrimaryVariant) {
-          continue;
-        }
-
-        if (variantStock.variantId) {
-          const matchingVariant = existingProduct.variants.find(
-            (variant) => variant.id === variantStock.variantId,
-          );
-
-          if (!matchingVariant) {
-            continue;
-          }
-
-          await tx
-            .update(productVariantTable)
-            .set({
-              stock: variantStock.stock,
-              isAvailable: variantStock.stock > 0,
-            })
-            .where(eq(productVariantTable.id, matchingVariant.id));
-
-          updatedVariantsCount += 1;
-          continue;
-        }
-
-        const existingVariantByCombination =
-          await tx.query.productVariantTable.findFirst({
-            where: and(
-              eq(productVariantTable.productId, existingProduct.id),
-              eq(productVariantTable.color, variantStock.color),
-              eq(productVariantTable.size, variantStock.size),
-            ),
-          });
-
-        if (existingVariantByCombination) {
-          await tx
-            .update(productVariantTable)
-            .set({
-              stock: variantStock.stock,
-              isAvailable: variantStock.stock > 0,
-            })
-            .where(eq(productVariantTable.id, existingVariantByCombination.id));
-
-          updatedVariantsCount += 1;
-          continue;
-        }
-
-        const newVariantSlug = await getUniqueVariantSlug(
-          generateVariantSlug(
-            productSlug,
-            variantStock.color,
-            variantStock.size,
-          ),
-        );
-
+        updatedVariantsCount += 1;
+      } else {
         await tx.insert(productVariantTable).values({
           productId: existingProduct.id,
-          name: payload.data.variantName,
-          color: variantStock.color,
-          imageUrl: variantStock.imageUrl,
+          name: op.cor,
+          color: op.cor,
+          size: op.tamanho,
+          stock: op.estoque,
+          imageUrl: op.imageUrl,
           priceInCents: updateFinalPriceInCents,
-          slug: newVariantSlug,
-          size: variantStock.size,
-          stock: variantStock.stock,
-          isAvailable: variantStock.stock > 0,
+          slug: op.slug,
+          isAvailable: op.estoque > 0,
         });
 
         createdVariantsCount += 1;
       }
-
-      return;
     }
-
-    await tx.insert(productVariantTable).values({
-      productId: existingProduct.id,
-      name: payload.data.variantName,
-      color: payload.data.variantColor,
-      imageUrl: updatePrimaryImageUrl,
-      priceInCents: updateFinalPriceInCents,
-      slug: variantSlug,
-      size: primaryVariantSize,
-      stock: payload.data.variantStock,
-      isAvailable: payload.data.variantStock > 0,
-    });
-
-    createdVariantsCount += 1;
   });
 
   revalidatePath(`/product/${existingProduct.slug}`);

@@ -150,6 +150,7 @@ export const adminProductSchema = z
     variantes: z
       .array(
         z.object({
+          id: z.string().uuid().optional(),
           cor: z.string().trim().min(1, "Cor obrigatória"),
           tamanho: z
             .string()
@@ -178,31 +179,12 @@ export const adminProductSchema = z
       });
     }
 
-    const isCreateMode = !value.productId;
-
-    if (isCreateMode) {
-      if (value.variantes.length === 0) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Adicione pelo menos uma variante.",
-          path: ["variantes"],
-        });
-      }
-    } else {
-      if (!value.variantName.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Informe o nome da variacao.",
-          path: ["variantName"],
-        });
-      }
-      if (!value.variantColor.trim()) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Informe a cor da variacao.",
-          path: ["variantColor"],
-        });
-      }
+    if (value.variantes.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Adicione pelo menos uma variante.",
+        path: ["variantes"],
+      });
     }
   });
 
