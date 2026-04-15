@@ -1,5 +1,4 @@
 import { parse } from "papaparse";
-import { and, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -15,19 +14,25 @@ import { normalizeSlugSegment, generateVariantSlug } from "@/helpers/generate-sl
 import { isAdminRole } from "@/lib/admin-auth";
 import { auth } from "@/lib/auth";
 
-const MAX_ROWS = 1000;
+const MAX_ROWS = 2000;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-// --- Zod schema for each CSV row ---
+// --- Zod schema for each CSV row (v3: one row per variant) ---
 const linhaSchema = z.object({
   nome: z.string().min(3, "nome deve ter pelo menos 3 caracteres"),
   categoria_slug: z.string().min(1, "categoria_slug é obrigatório"),
-  marca: z.string().min(1, "marca é obrigatório"),
+  marca: z.string().default(""),
   descricao: z.string().min(1, "descricao é obrigatório"),
   tipo_tamanho: z.enum(["alphabetic", "numeric"] as const),
   fornecedor_verificado: z.enum(["true", "false"] as const),
-  preco_em_centavos: z.coerce.number().int().positive("preco_em_centavos deve ser positivo"),
-  frete_em_centavos: z.coerce.number().int().min(0, "frete_em_centavos deve ser >= 0"),
+  preco_em_centavos: z.coerce
+    .number()
+    .int()
+    .positive("preco_em_centavos deve ser positivo"),
+  frete_em_centavos: z.coerce
+    .number()
+    .int()
+    .min(0, "frete_em_centavos deve ser >= 0"),
   preco_original_em_centavos: z.coerce.number().int().min(0).default(0),
   cep_origem: z
     .string()
@@ -35,15 +40,23 @@ const linhaSchema = z.object({
   peso_gramas: z.coerce.number().positive("peso_gramas deve ser positivo"),
   largura_cm: z.coerce.number().positive("largura_cm deve ser positivo"),
   altura_cm: z.coerce.number().positive("altura_cm deve ser positivo"),
-  comprimento_cm: z.coerce.number().positive("comprimento_cm deve ser positivo"),
-  prazo_minimo_dias: z.coerce.number().int().positive("prazo_minimo_dias deve ser positivo"),
-  prazo_maximo_dias: z.coerce.number().int().positive("prazo_maximo_dias deve ser positivo"),
-  percentual_desconto: z.coerce.number().int().min(0).max(100),
+  comprimento_cm: z.coerce
+    .number()
+    .positive("comprimento_cm deve ser positivo"),
+  prazo_minimo_dias: z.coerce
+    .number()
+    .int()
+    .positive("prazo_minimo_dias deve ser positivo"),
+  prazo_maximo_dias: z.coerce
+    .number()
+    .int()
+    .positive("prazo_maximo_dias deve ser positivo"),
+  percentual_desconto: z.coerce.number().int().min(0).max(100).default(0),
   badge_label: z.string().optional(),
   pix_discount_text: z.string().optional(),
   esta_em_promocao: z.enum(["true", "false"] as const),
   permite_personalizacao: z.enum(["true", "false"] as const),
-  video_url: z.string().url().optional().or(z.literal("")),
+  video_url_produto: z.string().url().optional().or(z.literal("")),
   foto_1: z.string().url("foto_1 deve ser uma URL válida"),
   foto_2: z.string().url().optional().or(z.literal("")),
   foto_3: z.string().url().optional().or(z.literal("")),
@@ -54,12 +67,22 @@ const linhaSchema = z.object({
   foto_8: z.string().url().optional().or(z.literal("")),
   foto_9: z.string().url().optional().or(z.literal("")),
   foto_10: z.string().url().optional().or(z.literal("")),
-  variante_nome: z.string().min(1, "variante_nome é obrigatório"),
+  // Per-variant fields
   variante_cor: z.string().min(1, "variante_cor é obrigatório"),
+  variante_tamanho: z
+    .string()
+    .min(1, "variante_tamanho é obrigatório")
+    .max(10, "variante_tamanho máximo 10 caracteres"),
   variante_estoque: z.coerce.number().int().min(0),
+  variante_imagem_url: z.string().url().optional().or(z.literal("")),
 });
 
 type CsvRow = z.infer<typeof linhaSchema>;
+
+type ParsedRow = {
+  lineNum: number;
+  data: CsvRow;
+};
 
 export type ImportError = {
   line: number;
@@ -126,7 +149,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const csvText = await file.text();
 
-  // --- CSV structure: line 1 = visual groups (skip), line 2 = headers, line 3 = descriptions (skip), line 4+ = data ---
+  // CSV structure (v3): line 1 = visual groups (skip), line 2 = headers,
+  // line 3 = descriptions (skip), line 4+ = data rows
   const lines = csvText.split("\n");
   if (lines.length < 4) {
     return NextResponse.json(
@@ -153,7 +177,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (parsed.data.length > MAX_ROWS) {
     return NextResponse.json(
       {
-        error: `O CSV contém mais de ${MAX_ROWS} linhas de dados. Divida em arquivos menores.`,
+        error: `O CSV contém mais de ${MAX_ROWS} linhas. Divida em arquivos menores.`,
       },
       { status: 400 },
     );
@@ -161,26 +185,31 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   // --- Pre-fetch data for lookups ---
   const [allCategories, existingProducts] = await Promise.all([
-    db.select({ id: categoryTable.id, slug: categoryTable.slug }).from(categoryTable),
-    db.select({ slug: productTable.slug, name: productTable.name, categoryId: productTable.categoryId }).from(productTable),
+    db
+      .select({ id: categoryTable.id, slug: categoryTable.slug })
+      .from(categoryTable),
+    db
+      .select({
+        slug: productTable.slug,
+        name: productTable.name,
+        categoryId: productTable.categoryId,
+      })
+      .from(productTable),
   ]);
 
   const categoryBySlug = new Map(allCategories.map((c) => [c.slug, c.id]));
-  const existingSlugs = new Set(existingProducts.map((p) => p.slug));
+  const existingProductSlugs = new Set(existingProducts.map((p) => p.slug));
   const existingByNameCategory = new Set(
     existingProducts.map((p) => `${p.name}__${p.categoryId}`),
   );
 
-  // Track slugs inserted in this batch to prevent duplicates within the same file
-  const batchSlugs = new Set<string>();
-  const batchNameCategory = new Set<string>();
-
   const errors: ImportError[] = [];
-  let imported = 0;
+
+  // --- Step 1: Validate each row individually ---
+  const validRows: ParsedRow[] = [];
 
   for (let i = 0; i < parsed.data.length; i++) {
-    // Line 1 of cleaned = header, so data rows start at line 2.
-    // In original file: line 4+ → display as i+4
+    // Original file line: header on line 2, descriptions on line 3, data from line 4
     const lineNum = i + 4;
     const raw = parsed.data[i];
     const rowName = (raw?.nome ?? `Linha ${lineNum}`).trim();
@@ -194,7 +223,6 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const row = result.data;
 
-    // Prazo validation
     if (row.prazo_maximo_dias < row.prazo_minimo_dias) {
       errors.push({
         line: lineNum,
@@ -204,33 +232,101 @@ export async function POST(request: Request): Promise<NextResponse> {
       continue;
     }
 
-    const categoryId = categoryBySlug.get(row.categoria_slug);
+    validRows.push({ lineNum, data: row });
+  }
+
+  // --- Step 2: Group valid rows by product name ---
+  const groups = new Map<string, ParsedRow[]>();
+  for (const row of validRows) {
+    const key = row.data.nome;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(row);
+    } else {
+      groups.set(key, [row]);
+    }
+  }
+
+  // --- Step 3: Import each product group ---
+  const batchProductSlugs = new Set<string>();
+  const batchNameCategory = new Set<string>();
+  let imported = 0;
+
+  for (const [productName, rows] of groups) {
+    // Product-level fields come from the first row
+    const firstRow = rows[0]!;
+    const { data: first, lineNum: firstLine } = firstRow;
+
+    const categoryId = categoryBySlug.get(first.categoria_slug);
     if (!categoryId) {
-      errors.push({
-        line: lineNum,
-        name: row.nome,
-        reason: `Categoria "${row.categoria_slug}" não encontrada.`,
-      });
+      for (const { lineNum } of rows) {
+        errors.push({
+          line: lineNum,
+          name: productName,
+          reason: `Categoria "${first.categoria_slug}" não encontrada.`,
+        });
+      }
       continue;
     }
 
-    const nameKey = `${row.nome}__${categoryId}`;
+    const nameKey = `${productName}__${categoryId}`;
     if (existingByNameCategory.has(nameKey) || batchNameCategory.has(nameKey)) {
-      errors.push({
-        line: lineNum,
-        name: row.nome,
-        reason: "Produto já existe nesta categoria (duplicado).",
-      });
+      for (const { lineNum } of rows) {
+        errors.push({
+          line: lineNum,
+          name: productName,
+          reason: "Produto já existe nesta categoria (duplicado).",
+        });
+      }
       continue;
     }
 
-    const productSlug = normalizeSlugSegment(row.nome);
-    if (existingSlugs.has(productSlug) || batchSlugs.has(productSlug)) {
-      errors.push({
-        line: lineNum,
-        name: row.nome,
-        reason: `Slug "${productSlug}" já está em uso. Altere o nome do produto.`,
+    const productSlug = normalizeSlugSegment(productName);
+    if (
+      existingProductSlugs.has(productSlug) ||
+      batchProductSlugs.has(productSlug)
+    ) {
+      for (const { lineNum } of rows) {
+        errors.push({
+          line: lineNum,
+          name: productName,
+          reason: `Slug "${productSlug}" já está em uso. Altere o nome do produto.`,
+        });
+      }
+      continue;
+    }
+
+    // Build variant list, deduplicating by (cor, tamanho)
+    const variantKeys = new Set<string>();
+    const variants: Array<{
+      cor: string;
+      tamanho: string;
+      estoque: number;
+      imageUrl: string;
+      lineNum: number;
+    }> = [];
+
+    for (const { data: row, lineNum } of rows) {
+      const variantKey = `${row.variante_cor}__${row.variante_tamanho}`;
+      if (variantKeys.has(variantKey)) {
+        errors.push({
+          line: lineNum,
+          name: productName,
+          reason: `Variante duplicada: cor "${row.variante_cor}" tamanho "${row.variante_tamanho}" já foi adicionada para este produto.`,
+        });
+        continue;
+      }
+      variantKeys.add(variantKey);
+      variants.push({
+        cor: row.variante_cor,
+        tamanho: row.variante_tamanho,
+        estoque: row.variante_estoque,
+        imageUrl: row.variante_imagem_url || first.foto_1,
+        lineNum,
       });
+    }
+
+    if (variants.length === 0) {
       continue;
     }
 
@@ -239,77 +335,82 @@ export async function POST(request: Request): Promise<NextResponse> {
         const [insertedProduct] = await tx
           .insert(productTable)
           .values({
-            name: row.nome,
+            name: productName,
             slug: productSlug,
             categoryId,
-            brand: row.marca,
-            description: row.descricao,
-            sizeType: row.tipo_tamanho,
-            isVerified: row.fornecedor_verificado === "true",
-            shippingCostInCents: row.frete_em_centavos,
-            originPostalCode: row.cep_origem,
-            weightGrams: Math.round(row.peso_gramas),
-            widthCm: Math.round(row.largura_cm),
-            heightCm: Math.round(row.altura_cm),
-            lengthCm: Math.round(row.comprimento_cm),
-            deliveryDaysMin: row.prazo_minimo_dias,
-            deliveryDaysMax: row.prazo_maximo_dias,
+            brand: first.marca,
+            description: first.descricao,
+            sizeType: first.tipo_tamanho,
+            isVerified: first.fornecedor_verificado === "true",
+            shippingCostInCents: first.frete_em_centavos,
+            originPostalCode: first.cep_origem,
+            weightGrams: Math.round(first.peso_gramas),
+            widthCm: Math.round(first.largura_cm),
+            heightCm: Math.round(first.altura_cm),
+            lengthCm: Math.round(first.comprimento_cm),
+            deliveryDaysMin: first.prazo_minimo_dias,
+            deliveryDaysMax: first.prazo_maximo_dias,
             discountPercent:
-              row.percentual_desconto >= 1 && row.percentual_desconto <= 99
-                ? row.percentual_desconto
+              first.percentual_desconto >= 1 && first.percentual_desconto <= 99
+                ? first.percentual_desconto
                 : null,
             originalPriceInCents:
-              row.preco_original_em_centavos > 0
-                ? row.preco_original_em_centavos
+              first.preco_original_em_centavos > 0
+                ? first.preco_original_em_centavos
                 : null,
-            isOnSale: row.esta_em_promocao === "true",
-            isCustomizable: row.permite_personalizacao === "true",
-            badgeLabel: row.badge_label || null,
-            pixDiscountText: row.pix_discount_text || null,
-            videoUrl: row.video_url || null,
+            isOnSale: first.esta_em_promocao === "true",
+            isCustomizable: first.permite_personalizacao === "true",
+            badgeLabel: first.badge_label || null,
+            pixDiscountText: first.pix_discount_text || null,
+            videoUrl: first.video_url_produto || null,
           })
           .returning({ id: productTable.id });
 
         const productId = insertedProduct!.id;
 
-        // Insert product images
-        const photos = extractPhotos(row);
+        // Insert product images (from first row)
+        const photos = extractPhotos(first);
         if (photos.length > 0) {
           await tx.insert(productImageTable).values(
-            photos.map((url, position) => ({
-              productId,
-              url,
-              position,
-            })),
+            photos.map((url, position) => ({ productId, url, position })),
           );
         }
 
-        // Insert base variant
-        const variantSlug = generateVariantSlug(
-          productSlug,
-          row.variante_cor,
-          "M",
+        // Pre-compute unique variant slugs to avoid DB duplicates within this batch
+        const usedVariantSlugs = new Set<string>();
+
+        await tx.insert(productVariantTable).values(
+          variants.map(({ cor, tamanho, estoque, imageUrl }) => {
+            let slug = generateVariantSlug(productSlug, cor, tamanho);
+            let attempt = 1;
+            while (usedVariantSlugs.has(slug)) {
+              slug = `${generateVariantSlug(productSlug, cor, tamanho)}-${attempt}`;
+              attempt++;
+            }
+            usedVariantSlugs.add(slug);
+
+            return {
+              productId,
+              name: cor,
+              slug,
+              size: tamanho,
+              color: cor,
+              priceInCents: first.preco_em_centavos,
+              imageUrl,
+              stock: estoque,
+              isAvailable: estoque > 0,
+            };
+          }),
         );
-        await tx.insert(productVariantTable).values({
-          productId,
-          name: row.variante_nome,
-          slug: variantSlug,
-          size: "M",
-          color: row.variante_cor,
-          priceInCents: row.preco_em_centavos,
-          imageUrl: row.foto_1,
-          stock: row.variante_estoque,
-          isAvailable: row.variante_estoque > 0,
-        });
       });
 
-      batchSlugs.add(productSlug);
+      batchProductSlugs.add(productSlug);
       batchNameCategory.add(nameKey);
       imported++;
     } catch (err) {
       const reason =
         err instanceof Error ? err.message : "Erro inesperado ao inserir.";
-      errors.push({ line: lineNum, name: row.nome, reason });
+      errors.push({ line: firstLine, name: productName, reason });
     }
   }
 

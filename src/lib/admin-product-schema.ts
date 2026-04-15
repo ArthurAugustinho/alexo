@@ -76,14 +76,8 @@ export const adminProductSchema = z
       .trim()
       .min(10, "A descricao precisa ter pelo menos 10 caracteres."),
     categoryId: z.uuid("Categoria invalida."),
-    variantName: z
-      .string("Nome da variacao invalido.")
-      .trim()
-      .min(1, "Informe o nome da variacao."),
-    variantColor: z
-      .string("Cor invalida.")
-      .trim()
-      .min(1, "Informe a cor da variacao."),
+    variantName: z.string().trim().default(""),
+    variantColor: z.string().trim().default(""),
     variantStock: z.coerce
       .number("Estoque invalido.")
       .int("Informe um estoque inteiro.")
@@ -153,18 +147,62 @@ export const adminProductSchema = z
       .min(0, "O valor não pode ser negativo.")
       .default(0),
     patches: z.array(adminPatchOptionSchema).default([]),
+    variantes: z
+      .array(
+        z.object({
+          cor: z.string().trim().min(1, "Cor obrigatória"),
+          tamanho: z
+            .string()
+            .trim()
+            .min(1, "Tamanho obrigatório")
+            .max(10, "Máximo 10 caracteres"),
+          estoque: z.coerce
+            .number()
+            .int("Informe um número inteiro.")
+            .min(0, "Estoque não pode ser negativo."),
+          imageUrl: z
+            .string()
+            .url("URL inválida")
+            .optional()
+            .or(z.literal("")),
+        }),
+      )
+      .default([]),
   })
   .superRefine((value, ctx) => {
-    if (value.sizeType !== "numeric") {
-      return;
-    }
-
-    if (value.productSizes.length === 0) {
+    if (value.sizeType === "numeric" && value.productSizes.length === 0) {
       ctx.addIssue({
         code: "custom",
         message: "Selecione ao menos um tamanho numerico.",
         path: ["productSizes"],
       });
+    }
+
+    const isCreateMode = !value.productId;
+
+    if (isCreateMode) {
+      if (value.variantes.length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Adicione pelo menos uma variante.",
+          path: ["variantes"],
+        });
+      }
+    } else {
+      if (!value.variantName.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Informe o nome da variacao.",
+          path: ["variantName"],
+        });
+      }
+      if (!value.variantColor.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Informe a cor da variacao.",
+          path: ["variantColor"],
+        });
+      }
     }
   });
 

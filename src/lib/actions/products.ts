@@ -101,18 +101,25 @@ async function getUniqueProductSlug(name: string, excludeProductId?: string) {
   }
 }
 
-async function getUniqueVariantSlug(name: string, excludeVariantId?: string) {
+async function getUniqueVariantSlug(
+  name: string,
+  excludeVariantId?: string,
+  excludeSlugs?: Set<string>,
+) {
   const baseSlug = generateSlug(name) || "variacao";
   let attempt = 0;
 
   while (true) {
     const candidate = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
-    const existingVariant = await db.query.productVariantTable.findFirst({
-      where: eq(productVariantTable.slug, candidate),
-    });
 
-    if (!existingVariant || existingVariant.id === excludeVariantId) {
-      return candidate;
+    if (!excludeSlugs?.has(candidate)) {
+      const existingVariant = await db.query.productVariantTable.findFirst({
+        where: eq(productVariantTable.slug, candidate),
+      });
+
+      if (!existingVariant || existingVariant.id === excludeVariantId) {
+        return candidate;
+      }
     }
 
     attempt += 1;
@@ -145,7 +152,6 @@ async function syncProductSizes(params: {
 function revalidateProductPaths(params: { productId: string; productSlug: string }) {
   revalidatePath("/");
   revalidatePath("/admin/dashboard");
-  revalidatePath(`/admin/produtos/${params.productId}/variantes`);
   revalidatePath(`/product/${params.productSlug}`);
 }
 
@@ -168,13 +174,6 @@ export async function createAdminProduct(
 
   const normalizedProductSizes = normalizeProductSizes(payload.data.productSizes);
   const productSlug = await getUniqueProductSlug(payload.data.name);
-  const variantSlug = await getUniqueVariantSlug(
-    `${payload.data.name}-${payload.data.variantColor}`,
-  );
-  const primaryVariantSize = getDefaultVariantSize({
-    sizeType: payload.data.sizeType,
-    productSizes: normalizedProductSizes,
-  });
 
   let createdProductId = "";
 
@@ -185,6 +184,32 @@ export async function createAdminProduct(
     ? Math.round(basePriceInCents * (1 - discountPercent / 100))
     : basePriceInCents;
   const isOnSale = Boolean(discountPercent);
+
+  // Pre-compute slugs for all variants before opening the transaction
+  const usedVariantSlugs = new Set<string>();
+  const variantEntries: Array<{
+    cor: string;
+    tamanho: string;
+    estoque: number;
+    imageUrl: string | undefined;
+    slug: string;
+  }> = [];
+
+  for (const variante of payload.data.variantes) {
+    const slug = await getUniqueVariantSlug(
+      generateVariantSlug(productSlug, variante.cor, variante.tamanho),
+      undefined,
+      usedVariantSlugs,
+    );
+    usedVariantSlugs.add(slug);
+    variantEntries.push({
+      cor: variante.cor,
+      tamanho: variante.tamanho,
+      estoque: variante.estoque,
+      imageUrl: variante.imageUrl,
+      slug,
+    });
+  }
 
   await db.transaction(async (tx) => {
     const [createdProduct] = await tx
@@ -247,17 +272,19 @@ export async function createAdminProduct(
 
     const primaryImageUrl = payload.data.images[0]?.url ?? "";
 
-    await tx.insert(productVariantTable).values({
-      productId: createdProduct.id,
-      name: payload.data.variantName,
-      color: payload.data.variantColor,
-      imageUrl: primaryImageUrl,
-      priceInCents: finalPriceInCents,
-      slug: variantSlug,
-      size: primaryVariantSize,
-      stock: payload.data.variantStock,
-      isAvailable: payload.data.variantStock > 0,
-    });
+    await tx.insert(productVariantTable).values(
+      variantEntries.map((v) => ({
+        productId: createdProduct.id,
+        name: v.cor,
+        color: v.cor,
+        size: v.tamanho,
+        imageUrl: v.imageUrl || primaryImageUrl,
+        priceInCents: finalPriceInCents,
+        slug: v.slug,
+        stock: v.estoque,
+        isAvailable: v.estoque > 0,
+      })),
+    );
   });
 
   revalidateProductPaths({
@@ -265,9 +292,11 @@ export async function createAdminProduct(
     productSlug,
   });
 
+  const variantCount = variantEntries.length;
+
   return {
     success: true,
-    message: "Produto criado com sucesso.",
+    message: `Produto criado com sucesso com ${variantCount} variante${variantCount !== 1 ? "s" : ""}.`,
     productId: createdProductId,
   };
 }

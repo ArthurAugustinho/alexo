@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { TrashIcon } from "lucide-react";
+import { PlusIcon, TrashIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useTransition } from "react";
 import { type Resolver, useFieldArray, useForm, useWatch } from "react-hook-form";
@@ -266,6 +266,7 @@ export function ProductForm({
       sizeType: product?.sizeType ?? "alphabetic",
       productSizes: product?.productSizes.map((size) => size.sizeValue) ?? [],
       variantStocks: variantStockGrid,
+      variantes: [],
     }),
     [categories, product, variantStockGrid],
   );
@@ -291,6 +292,15 @@ export function ProductForm({
   } = useFieldArray({
     control: form.control,
     name: "patches",
+  });
+
+  const {
+    fields: variantesFields,
+    append: appendVariante,
+    remove: removeVariante,
+  } = useFieldArray({
+    control: form.control,
+    name: "variantes",
   });
 
   const selectedSizeType = useWatch({
@@ -653,191 +663,297 @@ export function ProductForm({
           />
         ) : null}
 
-        <div className="grid gap-5 md:grid-cols-3">
-          <FormField
-            control={form.control}
-            name="variantName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome da variante base</FormLabel>
-                <FormControl>
-                  <Input
-                    className="rounded-xl"
-                    placeholder="Ex: Preto classico"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="variantColor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cor</FormLabel>
-                <FormControl>
-                  <Input className="rounded-xl" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {mode === "create" ? (
-            <FormField
-              control={form.control}
-              name="variantStock"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estoque da variante base</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="1"
-                      className="rounded-xl"
-                      name={field.name}
-                      ref={field.ref}
-                      onBlur={field.onBlur}
-                      disabled={field.disabled}
-                      value={typeof field.value === "number" ? field.value : ""}
-                      onChange={(event) =>
-                        field.onChange(
-                          event.target.value === ""
-                            ? 0
-                            : Number(event.target.value),
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ) : (
-            <div className="rounded-2xl border border-dashed border-border/70 px-4 py-3">
-              <p className="text-sm font-medium">Estoque da variante base</p>
-              <p className="text-muted-foreground mt-1 text-xs">
-                O estoque da variante base e ajustado na grade abaixo, junto com
-                os demais tamanhos da mesma cor.
-              </p>
-            </div>
-          )}
-        </div>
-
         {mode === "edit" ? (
-          <section className="space-y-4 rounded-3xl border border-border/70 bg-muted/10 p-5">
-            <div className="space-y-1">
-              <h3 className="text-base font-semibold">Estoque por tamanho</h3>
-              <p className="text-muted-foreground text-sm">
-                Todos os tamanhos estao listados por cor. Tamanhos &quot;Novo&quot; serao
-                criados ao salvar.
-              </p>
+          <>
+            <div className="grid gap-5 md:grid-cols-3">
+              <FormField
+                control={form.control}
+                name="variantName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome da variante base</FormLabel>
+                    <FormControl>
+                      <Input
+                        className="rounded-xl"
+                        placeholder="Ex: Preto classico"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="variantColor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cor</FormLabel>
+                    <FormControl>
+                      <Input className="rounded-xl" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="rounded-2xl border border-dashed border-border/70 px-4 py-3">
+                <p className="text-sm font-medium">Estoque da variante base</p>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  O estoque da variante base e ajustado na grade abaixo, junto com
+                  os demais tamanhos da mesma cor.
+                </p>
+              </div>
             </div>
 
-            {groupedVariantStocks.length === 0 ? (
-              <div className="rounded-2xl border border-dashed px-4 py-6 text-sm text-muted-foreground">
-                Nenhuma variante cadastrada para este produto.
+            <section className="space-y-4 rounded-3xl border border-border/70 bg-muted/10 p-5">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold">Estoque por tamanho</h3>
+                <p className="text-muted-foreground text-sm">
+                  Todos os tamanhos estao listados por cor. Tamanhos &quot;Novo&quot; serao
+                  criados ao salvar.
+                </p>
               </div>
-            ) : (
-              <div className="space-y-5">
-                {groupedVariantStocks.map((group) => (
-                  <div key={group.color} className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span
-                        className="size-3 rounded-full border border-black/10"
-                        style={{ backgroundColor: getColorHex(group.color) }}
-                      />
-                      <span>{group.color}</span>
-                    </div>
 
-                    <div className="space-y-0">
-                      {group.rows.map((row) => {
-                        const isNewVariant = row.variantId === null;
-                        const isAvailable = row.stock > 0;
+              {groupedVariantStocks.length === 0 ? (
+                <div className="rounded-2xl border border-dashed px-4 py-6 text-sm text-muted-foreground">
+                  Nenhuma variante cadastrada para este produto.
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {groupedVariantStocks.map((group) => (
+                    <div key={group.color} className="space-y-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span
+                          className="size-3 rounded-full border border-black/10"
+                          style={{ backgroundColor: getColorHex(group.color) }}
+                        />
+                        <span>{group.color}</span>
+                      </div>
 
-                        return (
-                          <div
-                            key={row.fieldId}
-                            className="flex items-start justify-between gap-3 border-b border-border/50 py-2 last:border-b-0"
-                          >
-                            <div className="flex min-w-0 items-center gap-3">
-                              <span
-                                className="size-3 rounded-full border border-black/10"
-                                style={{
-                                  backgroundColor: getColorHex(row.color),
-                                }}
-                              />
-                              <span className="text-sm font-medium">
-                                {row.color} · {row.size}
-                              </span>
-                            </div>
+                      <div className="space-y-0">
+                        {group.rows.map((row) => {
+                          const isNewVariant = row.variantId === null;
+                          const isAvailable = row.stock > 0;
 
-                            <div className="flex items-start gap-3">
-                              <div className="w-20">
-                                <FormField
-                                  control={form.control}
-                                  name={`variantStocks.${row.index}.stock`}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormControl>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          step="1"
-                                          className="h-10 rounded-xl text-right"
-                                          name={field.name}
-                                          ref={field.ref}
-                                          onBlur={field.onBlur}
-                                          disabled={field.disabled}
-                                          value={
-                                            typeof field.value === "number"
-                                              ? field.value
-                                              : ""
-                                          }
-                                          onChange={(event) =>
-                                            field.onChange(
-                                              event.target.value === ""
-                                                ? 0
-                                                : Number(event.target.value),
-                                            )
-                                          }
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
+                          return (
+                            <div
+                              key={row.fieldId}
+                              className="flex items-start justify-between gap-3 border-b border-border/50 py-2 last:border-b-0"
+                            >
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span
+                                  className="size-3 rounded-full border border-black/10"
+                                  style={{
+                                    backgroundColor: getColorHex(row.color),
+                                  }}
                                 />
+                                <span className="text-sm font-medium">
+                                  {row.color} · {row.size}
+                                </span>
                               </div>
 
-                              <Badge
-                                variant="outline"
-                                className={
-                                  isNewVariant
-                                    ? "border-primary/30 bg-primary/5 text-primary"
+                              <div className="flex items-start gap-3">
+                                <div className="w-20">
+                                  <FormField
+                                    control={form.control}
+                                    name={`variantStocks.${row.index}.stock`}
+                                    render={({ field }) => (
+                                      <FormItem>
+                                        <FormControl>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            className="h-10 rounded-xl text-right"
+                                            name={field.name}
+                                            ref={field.ref}
+                                            onBlur={field.onBlur}
+                                            disabled={field.disabled}
+                                            value={
+                                              typeof field.value === "number"
+                                                ? field.value
+                                                : ""
+                                            }
+                                            onChange={(event) =>
+                                              field.onChange(
+                                                event.target.value === ""
+                                                  ? 0
+                                                  : Number(event.target.value),
+                                              )
+                                            }
+                                          />
+                                        </FormControl>
+                                        <FormMessage />
+                                      </FormItem>
+                                    )}
+                                  />
+                                </div>
+
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    isNewVariant
+                                      ? "border-primary/30 bg-primary/5 text-primary"
+                                      : isAvailable
+                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                        : "border-slate-200 bg-slate-100 text-slate-600"
+                                  }
+                                >
+                                  {isNewVariant
+                                    ? "Novo"
                                     : isAvailable
-                                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                                      : "border-slate-200 bg-slate-100 text-slate-600"
-                                }
-                              >
-                                {isNewVariant
-                                  ? "Novo"
-                                  : isAvailable
-                                    ? "Disponivel"
-                                    : "Indisponivel"}
-                              </Badge>
+                                      ? "Disponivel"
+                                      : "Indisponivel"}
+                                </Badge>
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </>
+        ) : null}
+
+        {mode === "create" ? (
+          <section className="space-y-4 rounded-3xl border border-border/70 bg-muted/10 p-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold">Variantes</h3>
+                <p className="text-muted-foreground text-sm">
+                  Defina as variantes iniciais do produto (cor, tamanho e
+                  estoque).
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-xl"
+                onClick={() =>
+                  appendVariante({ cor: "", tamanho: "", estoque: 0, imageUrl: "" })
+                }
+              >
+                <PlusIcon className="size-4" />
+                Adicionar variante
+              </Button>
+            </div>
+
+            {variantesFields.length === 0 ? (
+              <div className="rounded-2xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
+                Nenhuma variante adicionada. Clique em &quot;Adicionar
+                variante&quot; para começar.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {variantesFields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className="grid gap-3 rounded-2xl border p-3 md:grid-cols-[1fr_120px_100px_1fr_auto]"
+                  >
+                    <FormField
+                      control={form.control}
+                      name={`variantes.${index}.cor`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Cor</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="rounded-xl"
+                              placeholder="Ex: Amarela"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`variantes.${index}.tamanho`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Tamanho</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="rounded-xl"
+                              placeholder="Ex: M"
+                              maxLength={10}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`variantes.${index}.estoque`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Estoque</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              className="rounded-xl"
+                              placeholder="0"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`variantes.${index}.imageUrl`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">
+                            URL da imagem (opcional)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              className="rounded-xl"
+                              placeholder="https://..."
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <div className="flex items-end pb-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => removeVariante(index)}
+                      >
+                        <TrashIcon className="size-4" />
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
+            <FormField
+              control={form.control}
+              name="variantes"
+              render={() => (
+                <FormItem>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </section>
         ) : null}
 
