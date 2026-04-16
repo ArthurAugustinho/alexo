@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import { LottieAnimation } from "@/components/checkout/lottie-animation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,21 +15,19 @@ import {
 
 type CheckoutSuccessDialogProps = {
   orderId?: string;
-  imageUrl?: string | null;
 };
 
-export function CheckoutSuccessDialog({ orderId, imageUrl }: CheckoutSuccessDialogProps) {
+export function CheckoutSuccessDialog({ orderId }: CheckoutSuccessDialogProps) {
   const [open, setOpen] = useState(true);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="text-center">
-        <Image
-          src={imageUrl || "/illustration.svg"}
-          alt="Pagamento aprovado"
-          width={300}
-          height={300}
-          className="mx-auto"
+        <LottieAnimation
+          src="/animations/checkout-success.json"
+          width={280}
+          height={280}
+          loop={false}
         />
         <DialogTitle className="mt-4 text-2xl">Pagamento aprovado!</DialogTitle>
         <DialogDescription className="font-medium">

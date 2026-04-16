@@ -281,50 +281,35 @@ export function LogisticsConfigForm({ config }: LogisticsConfigFormProps) {
             )}
           />
 
-          {/* Checkout images */}
-          <fieldset className="border-border/60 space-y-4 rounded-2xl border p-4">
-            <legend className="px-1 text-sm font-medium">
-              Imagens do checkout
-            </legend>
-
+          {/* Checkout images — hidden: animações Lottie integradas substituem as URLs */}
+          <div className="hidden">
             <FormField
               control={form.control}
               name="successImageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Imagem de pagamento aprovado (URL)</FormLabel>
                   <FormControl>
-                    <Input
-                      className="rounded-xl"
-                      placeholder="https://..."
-                      {...field}
-                      value={field.value ?? ""}
-                    />
+                    <Input {...field} value={field.value ?? ""} />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="cancelImageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Imagem de pagamento não confirmado (URL)</FormLabel>
                   <FormControl>
-                    <Input
-                      className="rounded-xl"
-                      placeholder="https://..."
-                      {...field}
-                      value={field.value ?? ""}
-                    />
+                    <Input {...field} value={field.value ?? ""} />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
-          </fieldset>
+          </div>
+
+          <p className="text-sm text-muted-foreground">
+            As páginas de checkout utilizam animações integradas ao sistema.
+          </p>
 
           <div className="flex justify-end">
             <Button type="submit" className="rounded-xl" disabled={isPending}>

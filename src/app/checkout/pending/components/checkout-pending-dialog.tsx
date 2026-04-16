@@ -1,9 +1,9 @@
 "use client";
 
-import { Clock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { LottieAnimation } from "@/components/checkout/lottie-animation";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,7 +19,12 @@ export function CheckoutPendingDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="text-center">
-        <Clock className="mx-auto h-16 w-16 text-yellow-500" />
+        <LottieAnimation
+          src="/animations/checkout-pending.json"
+          width={280}
+          height={280}
+          loop={true}
+        />
         <DialogTitle className="mt-4 text-2xl">
           Pagamento em análise
         </DialogTitle>

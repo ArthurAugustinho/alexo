@@ -1,7 +1,10 @@
 import { Header } from "@/components/common/header";
-import { getLogisticsConfig } from "@/lib/queries/logistics";
 
 import { CheckoutSuccessDialog } from "./components/checkout-success-dialog";
+
+export const metadata = {
+  robots: { index: false },
+};
 
 type CheckoutSuccessPageProps = {
   searchParams: Promise<{
@@ -12,18 +15,12 @@ type CheckoutSuccessPageProps = {
 const CheckoutSuccessPage = async ({
   searchParams,
 }: CheckoutSuccessPageProps) => {
-  const [{ orderId }, logisticsConfig] = await Promise.all([
-    searchParams,
-    getLogisticsConfig(),
-  ]);
+  const { orderId } = await searchParams;
 
   return (
     <>
       <Header />
-      <CheckoutSuccessDialog
-        orderId={orderId}
-        imageUrl={logisticsConfig?.successImageUrl}
-      />
+      <CheckoutSuccessDialog orderId={orderId} />
     </>
   );
 };
