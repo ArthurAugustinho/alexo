@@ -1,10 +1,10 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
 import { Header } from "@/components/common/header";
 import ProductItem from "@/components/common/product-item";
 import { db } from "@/db";
-import { categoryTable, productTable } from "@/db/schema";
+import { categoryTable, productImageTable, productTable } from "@/db/schema";
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -22,6 +22,7 @@ const CategoryPage = async ({ params }: CategoryPageProps) => {
     where: eq(productTable.categoryId, category.id),
     with: {
       variants: true,
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
     },
   });
   return (

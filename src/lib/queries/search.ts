@@ -12,6 +12,7 @@ import {
 import { db } from "@/db";
 import {
   categoryTable,
+  productImageTable,
   productTable,
   productVariantTable,
 } from "@/db/schema";
@@ -79,9 +80,15 @@ export type SearchResult = {
   filters: AvailableFilters;
 };
 
-type SearchProductWithRelations = typeof productTable.$inferSelect & {
+// Used for filter aggregation — does not include images (unnecessary overhead)
+type SearchProductForFilters = typeof productTable.$inferSelect & {
   category: typeof categoryTable.$inferSelect;
   variants: (typeof productVariantTable.$inferSelect)[];
+};
+
+// Used for the paginated display slice — includes the primary image
+type SearchProductWithRelations = SearchProductForFilters & {
+  images: (typeof productImageTable.$inferSelect)[];
 };
 
 function getNormalizedSearchPattern(query?: string) {
@@ -152,13 +159,13 @@ function normalizeSearchProducts(
       categoryId: product.categoryId,
       categoryName: product.category.name,
       variantSlug: preferredVariant.slug,
-      imageUrl: preferredVariant.imageUrl,
+      imageUrl: product.images?.[0]?.url ?? preferredVariant.imageUrl,
       priceInCents: preferredVariant.priceInCents,
     };
   });
 }
 
-function buildAvailableFilters(products: SearchProductWithRelations[]): AvailableFilters {
+function buildAvailableFilters(products: SearchProductForFilters[]): AvailableFilters {
   const categoryCounts = new Map<string, { id: string; name: string; count: number }>();
   const brandCounts = new Map<string, { name: string; count: number }>();
   const colorCounts = new Map<string, { name: string; count: number }>();
@@ -377,6 +384,7 @@ export async function searchProducts(params: SearchParams): Promise<SearchResult
         where: eq(productVariantTable.isAvailable, true),
         orderBy: [asc(productVariantTable.createdAt)],
       },
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
     },
   });
 

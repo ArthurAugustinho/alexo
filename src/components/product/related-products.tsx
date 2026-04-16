@@ -1,7 +1,7 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 
 import { db } from "@/db";
-import { productTable, productVariantTable } from "@/db/schema";
+import { productImageTable, productTable, productVariantTable } from "@/db/schema";
 
 import ProductItem from "../common/product-item";
 
@@ -23,6 +23,7 @@ export async function RelatedProducts({
       variants: {
         orderBy: [desc(productVariantTable.isAvailable)],
       },
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
     },
     limit: 4,
   });

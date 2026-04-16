@@ -31,6 +31,7 @@ export type CarouselProduct = {
 
 type ProductWithVariantsRaw = typeof productTable.$inferSelect & {
   variants: (typeof productVariantTable.$inferSelect)[];
+  images: (typeof productImageTable.$inferSelect)[];
 };
 
 function normalizeForCarousel(products: ProductWithVariantsRaw[]): CarouselProduct[] {
@@ -43,7 +44,7 @@ function normalizeForCarousel(products: ProductWithVariantsRaw[]): CarouselProdu
         name: product.name,
         slug: product.slug,
         variantSlug: variant.slug,
-        imageUrl: variant.imageUrl,
+        imageUrl: product.images[0]?.url ?? variant.imageUrl,
         priceInCents: variant.priceInCents,
         originalPriceInCents: product.originalPriceInCents ?? null,
         discountPercent: product.discountPercent ?? null,
@@ -97,7 +98,10 @@ export async function getRecommendedProducts(
       eq(productTable.categoryId, categoryId),
       ne(productTable.id, excludeId),
     ),
-    with: { variants: true },
+    with: {
+      variants: true,
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
+    },
     orderBy: sql`RANDOM()`,
     limit: 8,
   });
@@ -122,7 +126,10 @@ export async function getFrequentlyBoughtProducts(
       eq(productTable.categoryId, accessoriesCategory.id),
       ne(productTable.id, excludeId),
     ),
-    with: { variants: true },
+    with: {
+      variants: true,
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
+    },
     orderBy: sql`RANDOM()`,
     limit: 8,
   });
@@ -141,7 +148,10 @@ export async function getSaleProducts(
       ne(productTable.id, excludeId),
       gt(productTable.discountPercent, 0),
     ),
-    with: { variants: true },
+    with: {
+      variants: true,
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
+    },
     orderBy: [sql`${productTable.discountPercent} DESC NULLS LAST`, sql`RANDOM()`],
     limit: 8,
   });
@@ -152,7 +162,10 @@ export async function getSaleProducts(
 export async function getOnSaleProducts(): Promise<CarouselProduct[]> {
   const products = await db.query.productTable.findMany({
     where: eq(productTable.isOnSale, true),
-    with: { variants: true },
+    with: {
+      variants: true,
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
+    },
     orderBy: [sql`${productTable.discountPercent} DESC NULLS LAST`],
     limit: 12,
   });

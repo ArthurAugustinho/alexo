@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { productTable, productVariantTable } from "@/db/schema";
+import { productImageTable, productTable, productVariantTable } from "@/db/schema";
 import { formatCentsToBRL } from "@/helpers/money";
 import { getPreferredVariant } from "@/lib/product-variant-schema";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface ProductItemProps {
   product: typeof productTable.$inferSelect & {
     variants: (typeof productVariantTable.$inferSelect)[];
+    images?: (typeof productImageTable.$inferSelect)[];
   };
   textContainerClassName?: string;
 }
@@ -20,13 +21,15 @@ const ProductItem = ({ product, textContainerClassName }: ProductItemProps) => {
     return null;
   }
 
+  const imageUrl = product.images?.[0]?.url ?? firstVariant.imageUrl;
+
   return (
     <Link
       href={`/product/${product.slug}?variant=${firstVariant.slug}`}
       className="flex flex-col gap-4"
     >
       <Image
-        src={firstVariant.imageUrl}
+        src={imageUrl}
         alt={firstVariant.name}
         sizes="100vw"
         height={0}

@@ -3,6 +3,7 @@ import { and, asc, desc, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
 import {
   featuredProductTable,
+  productImageTable,
   productTable,
   productVariantTable,
   seasonalBannerTable,
@@ -18,6 +19,7 @@ import {
 
 type ProductWithVariants = typeof productTable.$inferSelect & {
   variants: (typeof productVariantTable.$inferSelect)[];
+  images: (typeof productImageTable.$inferSelect)[];
 };
 
 function normalizeProductsForShowcase(
@@ -35,7 +37,7 @@ function normalizeProductsForShowcase(
       name: product.name,
       slug: product.slug,
       variantSlug: firstVariant.slug,
-      imageUrl: firstVariant.imageUrl,
+      imageUrl: product.images[0]?.url ?? firstVariant.imageUrl,
       priceInCents: firstVariant.priceInCents,
     };
   });
@@ -82,6 +84,7 @@ export async function getNewestStorefrontProducts(): Promise<
       variants: {
         orderBy: [asc(productVariantTable.createdAt)],
       },
+      images: { orderBy: [asc(productImageTable.position)], limit: 1 },
     },
   });
 
@@ -100,6 +103,7 @@ export async function getBestSellingStorefrontProducts(): Promise<
           variants: {
             orderBy: [asc(productVariantTable.createdAt)],
           },
+          images: { orderBy: [asc(productImageTable.position)], limit: 1 },
         },
       },
     },
