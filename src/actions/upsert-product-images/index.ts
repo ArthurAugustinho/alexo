@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
@@ -50,8 +50,10 @@ export async function upsertProductImages(
       await tx
         .delete(productImageTable)
         .where(
-          eq(productImageTable.productId, payload.data.productId) &&
+          and(
+            eq(productImageTable.productId, payload.data.productId),
             notInArray(productImageTable.id, incomingIds),
+          ),
         );
     } else {
       await tx
@@ -69,8 +71,10 @@ export async function upsertProductImages(
             position: img.position,
           })
           .where(
-            eq(productImageTable.id, img.id) &&
+            and(
+              eq(productImageTable.id, img.id),
               eq(productImageTable.productId, payload.data.productId),
+            ),
           );
       } else {
         await tx.insert(productImageTable).values({
