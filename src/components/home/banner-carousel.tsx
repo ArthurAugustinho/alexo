@@ -96,13 +96,14 @@ export function BannerCarousel({
                     className="hidden object-cover md:block"
                   />
                   {/* Imagem mobile — usa mobileImageUrl se disponível, senão fallback desktop */}
+                  {/* object-top ancora o corte no topo preservando o produto (alternativa: object-[center_20%]) */}
                   <Image
                     src={banner.mobileImageUrl ?? banner.imageUrl}
                     alt={`${banner.title} — ${banner.subtitle}`}
                     fill
                     priority={index === 0}
                     sizes="100vw"
-                    className="block object-cover md:hidden"
+                    className="block object-cover object-top md:hidden"
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,9,11,0.62),rgba(9,9,11,0.08))]" />
 
