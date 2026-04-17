@@ -104,6 +104,11 @@ export function ProductGallery({
   const [lightboxOrigin, setLightboxOrigin] = useState("50% 50%");
   const lastTapRef = useRef(0);
 
+  // Mobile carousel scroll refs
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isUserScrollingRef = useRef(false);
+  const scrollEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Sync active index when variant changes externally
   useEffect(() => {
     const idx = images.indexOf(activeImageUrl);
@@ -111,6 +116,18 @@ export function ProductGallery({
       setActiveIndex(idx);
     }
   }, [activeImageUrl, images]);
+
+  // Programmatic scroll: only when activeIndex changes from a non-swipe source
+  // (dot click, variant selection). Skipped during user-driven swipe.
+  useEffect(() => {
+    if (isUserScrollingRef.current) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const target = container.children[activeIndex] as HTMLElement | null;
+    if (target) {
+      container.scrollTo({ left: target.offsetLeft, behavior: "smooth" });
+    }
+  }, [activeIndex]);
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -279,27 +296,29 @@ export function ProductGallery({
       {/* Mobile layout: horizontal scroll-snap carousel */}
       <div className="lg:hidden">
         <div
+          ref={scrollContainerRef}
           className="flex snap-x snap-mandatory overflow-x-auto [&::-webkit-scrollbar]:hidden"
           onScroll={(e) => {
+            // Mark as user-driven to prevent the programmatic scroll effect
+            isUserScrollingRef.current = true;
+            if (scrollEndTimerRef.current) {
+              clearTimeout(scrollEndTimerRef.current);
+            }
+            scrollEndTimerRef.current = setTimeout(() => {
+              isUserScrollingRef.current = false;
+            }, 150);
+
             const container = e.currentTarget;
             const index = Math.round(
               container.scrollLeft / container.offsetWidth,
             );
             setActiveIndex(index);
           }}
-          ref={(el) => {
-            if (el && items.length > 0) {
-              const target = el.children[activeIndex] as HTMLElement | null;
-              if (target) {
-                el.scrollTo({ left: target.offsetLeft, behavior: "smooth" });
-              }
-            }
-          }}
         >
           {items.map((item, index) => (
             <div
               key={index}
-              className="relative aspect-square w-full flex-none snap-center"
+              className="relative aspect-square w-full flex-none snap-start"
               onClick={() => openLightbox(index)}
             >
               {item.type === "video" ? (
