@@ -157,9 +157,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const responseJson = await melhorEnvioResponse.json().catch(() => null);
-
   if (!melhorEnvioResponse.ok) {
+    const errorBody = await melhorEnvioResponse.text().catch(() => "(falha ao ler body)");
+    console.error("[Shipping] Melhor Envio error:", {
+      status: melhorEnvioResponse.status,
+      statusText: melhorEnvioResponse.statusText,
+      body: errorBody,
+      headers: Object.fromEntries(melhorEnvioResponse.headers.entries()),
+    });
+
     const invalidPostalCodeStatus =
       melhorEnvioResponse.status === 400 ||
       melhorEnvioResponse.status === 422;
@@ -173,6 +179,8 @@ export async function POST(request: Request) {
       { status: invalidPostalCodeStatus ? 400 : 503 },
     );
   }
+
+  const responseJson = await melhorEnvioResponse.json().catch(() => null);
 
   const parsedResponse = melhorEnvioResponseSchema.safeParse(responseJson);
 
