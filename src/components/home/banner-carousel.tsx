@@ -85,7 +85,7 @@ export function BannerCarousel({
                 rel={isExternalLink ? "noreferrer" : undefined}
                 className="relative block min-w-full"
               >
-                <div className="relative h-[480px] bg-black md:h-[420px] md:bg-transparent">
+                <div className="relative aspect-[5/6] w-full md:aspect-auto md:h-[420px]">
                   {/* Imagem desktop */}
                   <Image
                     src={banner.imageUrl}
