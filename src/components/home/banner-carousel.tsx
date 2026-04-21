@@ -85,26 +85,36 @@ export function BannerCarousel({
                 rel={isExternalLink ? "noreferrer" : undefined}
                 className="relative block min-w-full"
               >
-                <div className="relative h-[500px] md:h-[480px]">
-                  {/* Imagem desktop — oculta no mobile */}
+                <div className="relative h-[480px] bg-black md:h-[420px] md:bg-transparent">
+                  {/* Imagem desktop */}
                   <Image
                     src={banner.imageUrl}
                     alt={`${banner.title} — ${banner.subtitle}`}
                     fill
                     priority={index === 0}
                     sizes="100vw"
-                    className="hidden object-cover md:block"
+                    className="hidden object-cover object-center md:block"
                   />
-                  {/* Imagem mobile — usa mobileImageUrl se disponível, senão fallback desktop */}
-                  {/* object-top ancora o corte no topo preservando o produto (alternativa: object-[center_20%]) */}
-                  <Image
-                    src={banner.mobileImageUrl ?? banner.imageUrl}
-                    alt={`${banner.title} — ${banner.subtitle}`}
-                    fill
-                    priority={index === 0}
-                    sizes="100vw"
-                    className="block object-cover object-top md:hidden"
-                  />
+                  {/* Imagem mobile: portrait própria (object-cover) ou fallback landscape (object-contain) */}
+                  {banner.mobileImageUrl ? (
+                    <Image
+                      src={banner.mobileImageUrl}
+                      alt={`${banner.title} — ${banner.subtitle}`}
+                      fill
+                      priority={index === 0}
+                      sizes="100vw"
+                      className="block object-cover object-center md:hidden"
+                    />
+                  ) : (
+                    <Image
+                      src={banner.imageUrl}
+                      alt={`${banner.title} — ${banner.subtitle}`}
+                      fill
+                      priority={index === 0}
+                      sizes="100vw"
+                      className="block object-contain object-center md:hidden"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,9,11,0.62),rgba(9,9,11,0.08))]" />
 
                   <div className="absolute inset-x-0 bottom-0 flex h-full items-end p-6 md:p-10">
