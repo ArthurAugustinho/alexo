@@ -17,11 +17,12 @@ import { auth } from "@/lib/auth";
 const MAX_ROWS = 2000;
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-// --- Zod schema for each CSV row (v3: one row per variant) ---
+// --- Zod schema for each CSV row (v5: one row per variant) ---
 const linhaSchema = z.object({
   nome: z.string().min(3, "nome deve ter pelo menos 3 caracteres"),
   categoria_slug: z.string().min(1, "categoria_slug é obrigatório"),
-  marca: z.string().default(""),
+  marca: z.string().min(1, "marca é obrigatório"),
+  cor_principal: z.string().min(1, "cor_principal é obrigatório"),
   descricao: z.string().min(1, "descricao é obrigatório"),
   tipo_tamanho: z.enum(["alphabetic", "numeric"] as const),
   fornecedor_verificado: z.enum(["true", "false"] as const),
@@ -56,7 +57,12 @@ const linhaSchema = z.object({
   pix_discount_text: z.string().optional(),
   esta_em_promocao: z.enum(["true", "false"] as const),
   permite_personalizacao: z.enum(["true", "false"] as const),
-  video_url_produto: z.string().url().optional().or(z.literal("")),
+  prazo_adicional_personalizacao: z.coerce.number().int().min(0).default(0),
+  preco_personalizacao_nome: z.coerce.number().int().min(0).default(0),
+  preco_personalizacao_numero: z.coerce.number().int().min(0).default(0),
+  // cor_principal e preco_em_centavos existem no CSV mas não têm campo correspondente
+  // na tabela product (preço vive na variante; cor_principal é informativo)
+  video_url: z.string().url().optional().or(z.literal("")),
   foto_1: z.string().url("foto_1 deve ser uma URL válida"),
   foto_2: z.string().url().optional().or(z.literal("")),
   foto_3: z.string().url().optional().or(z.literal("")),
@@ -67,6 +73,7 @@ const linhaSchema = z.object({
   foto_8: z.string().url().optional().or(z.literal("")),
   foto_9: z.string().url().optional().or(z.literal("")),
   foto_10: z.string().url().optional().or(z.literal("")),
+  video_url_produto: z.string().url().optional().or(z.literal("")),
   // Per-variant fields
   variante_cor: z.string().min(1, "variante_cor é obrigatório"),
   variante_tamanho: z
@@ -149,20 +156,22 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const csvText = await file.text();
 
-  // CSV structure (v3): line 1 = visual groups (skip), line 2 = headers,
-  // line 3 = descriptions (skip), line 4+ = data rows
+  // CSV structure (v5): line 1 = visual groups (skip), line 2 = headers,
+  // line 3 = descriptions (skip), line 4 = warning (skip), line 5+ = data rows
   const lines = csvText.split("\n");
-  if (lines.length < 4) {
+  if (lines.length < 5) {
     return NextResponse.json(
       { error: "CSV inválido ou sem dados." },
       { status: 400 },
     );
   }
-  const cleaned = [lines[1], ...lines.slice(3)].join("\n");
+  const cleaned = [lines[1], ...lines.slice(4)].join("\n");
 
   const parsed = parse<Record<string, string>>(cleaned, {
     header: true,
     skipEmptyLines: true,
+    quoteChar: '"',
+    newline: "\n",
     transformHeader: (h) => h.trim(),
     transform: (val) => val.trim(),
   });
@@ -209,8 +218,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const validRows: ParsedRow[] = [];
 
   for (let i = 0; i < parsed.data.length; i++) {
-    // Original file line: header on line 2, descriptions on line 3, data from line 4
-    const lineNum = i + 4;
+    // Original file line: header on line 2, descriptions on line 3, warning on line 4, data from line 5
+    const lineNum = i + 5;
     const raw = parsed.data[i];
     const rowName = (raw?.nome ?? `Linha ${lineNum}`).trim();
 
@@ -360,9 +369,14 @@ export async function POST(request: Request): Promise<NextResponse> {
                 : null,
             isOnSale: first.esta_em_promocao === "true",
             isCustomizable: first.permite_personalizacao === "true",
+            customizationLeadDays: first.prazo_adicional_personalizacao,
+            nameFieldEnabled: first.preco_personalizacao_nome > 0,
+            nameFieldPriceInCents: first.preco_personalizacao_nome,
+            numberFieldEnabled: first.preco_personalizacao_numero > 0,
+            numberFieldPriceInCents: first.preco_personalizacao_numero,
             badgeLabel: first.badge_label || null,
             pixDiscountText: first.pix_discount_text || null,
-            videoUrl: first.video_url_produto || null,
+            videoUrl: first.video_url || null,
           })
           .returning({ id: productTable.id });
 
