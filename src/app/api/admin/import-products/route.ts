@@ -86,7 +86,7 @@ const linhaSchema = z.object({
   video_url_produto: optionalString(),
   // Per-variant fields (cor e tamanho opcionais — produto pode ser criado sem variante)
   variante_cor: optionalString(),
-  variante_tamanho: optionalString(10),
+  variante_tamanho: optionalString(),
   variante_estoque: z.coerce.number().int().min(0).default(0),
   variante_imagem_url: optionalString(),
 });
