@@ -325,7 +325,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       continue;
     }
 
-    // Build variant list — supports comma-separated sizes in a single cell
+    // Build variant list — supports comma-separated cores and tamanhos.
+    // Combination strategies:
+    //   cores[1] × tamanhos[N]  → N variants (same cor)
+    //   cores[N] × tamanhos[1]  → N variants (same tamanho)
+    //   cores[N] × tamanhos[N]  → N variants (1:1 pairing)
+    //   cores[N] × tamanhos[M]  → N×M variants (cartesian product)
     const variantKeys = new Set<string>();
     const variants: Array<{
       cor: string;
@@ -335,47 +340,73 @@ export async function POST(request: Request): Promise<NextResponse> {
     }> = [];
 
     for (const { data: row, lineNum } of rows) {
-      const corRaw = row.variante_cor?.trim() ?? "";
-      const tamanhoRaw = row.variante_tamanho?.trim() ?? "";
+      const coresRaw = row.variante_cor?.trim() ?? "";
+      const tamanhosRaw = row.variante_tamanho?.trim() ?? "";
 
       // Row with no cor/tamanho: product will be imported without variants
-      if (!corRaw && !tamanhoRaw) continue;
-
-      const tamanhos = tamanhoRaw.includes(",")
-        ? tamanhoRaw.split(",").map((t) => t.trim()).filter(Boolean)
-        : tamanhoRaw ? [tamanhoRaw] : [];
-
-      if (tamanhos.length === 0) continue;
+      if (!coresRaw && !tamanhosRaw) continue;
 
       const imageUrl = row.variante_imagem_url || first.foto_1 || "";
 
-      for (const tamanho of tamanhos) {
-        if (tamanho.length > 10) {
+      const cores = coresRaw.includes(",")
+        ? coresRaw.split(",").map((c) => c.trim()).filter(Boolean)
+        : coresRaw ? [coresRaw] : [];
+
+      const tamanhosAll = tamanhosRaw.includes(",")
+        ? tamanhosRaw.split(",").map((t) => t.trim()).filter(Boolean)
+        : tamanhosRaw ? [tamanhosRaw] : [];
+
+      // Validate individual tamanho length; skip invalid ones with a warning
+      const tamanhos = tamanhosAll.filter((t) => {
+        if (t.length > 10) {
           warnings.push({
             line: lineNum,
             name: productName,
-            reason: `Tamanho "${tamanho}" ignorado — máximo 10 caracteres`,
+            reason: `Tamanho "${t}" ignorado — máximo 10 caracteres`,
           });
-          continue;
+          return false;
         }
+        return true;
+      });
 
-        const variantKey = `${corRaw}__${tamanho}`;
+      if (cores.length === 0 && tamanhos.length === 0) continue;
+
+      // Normalize: at least 1 entry in each list so the cross-product logic works
+      const coresFinal = cores.length > 0 ? cores : [""];
+      const tamanhosFinal = tamanhos.length > 0 ? tamanhos : [""];
+
+      // Build (cor, tamanho) pairs
+      let pairs: Array<[string, string]>;
+
+      if (coresFinal.length === tamanhosFinal.length && coresFinal.length > 1) {
+        // Equal counts > 1: pair 1:1
+        pairs = coresFinal.map((cor, i) => [cor, tamanhosFinal[i]!]);
+      } else if (coresFinal.length === 1) {
+        // Single cor, multiple tamanhos
+        pairs = tamanhosFinal.map((t) => [coresFinal[0]!, t]);
+      } else if (tamanhosFinal.length === 1) {
+        // Multiple cores, single tamanho
+        pairs = coresFinal.map((c) => [c, tamanhosFinal[0]!]);
+      } else {
+        // Cartesian product: N cores × M tamanhos
+        pairs = coresFinal.flatMap((c) =>
+          tamanhosFinal.map((t): [string, string] => [c, t]),
+        );
+      }
+
+      for (const [cor, tamanho] of pairs) {
+        const variantKey = `${cor}__${tamanho}`;
         if (variantKeys.has(variantKey)) {
           errors.push({
             line: lineNum,
             name: productName,
-            reason: `Variante duplicada: cor "${corRaw}" tamanho "${tamanho}" já foi adicionada para este produto.`,
+            reason: `Variante duplicada: cor "${cor}" tamanho "${tamanho}" já foi adicionada para este produto.`,
           });
           continue;
         }
 
         variantKeys.add(variantKey);
-        variants.push({
-          cor: corRaw,
-          tamanho,
-          estoque: row.variante_estoque,
-          imageUrl,
-        });
+        variants.push({ cor, tamanho, estoque: row.variante_estoque, imageUrl });
       }
     }
 
