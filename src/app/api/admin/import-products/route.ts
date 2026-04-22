@@ -63,7 +63,7 @@ const linhaSchema = z.object({
   // cor_principal e preco_em_centavos existem no CSV mas não têm campo correspondente
   // na tabela product (preço vive na variante; cor_principal é informativo)
   video_url: z.string().url().optional().or(z.literal("")),
-  foto_1: z.string().url("foto_1 deve ser uma URL válida"),
+  foto_1: z.string().url().optional().or(z.literal("")),
   foto_2: z.string().url().optional().or(z.literal("")),
   foto_3: z.string().url().optional().or(z.literal("")),
   foto_4: z.string().url().optional().or(z.literal("")),
@@ -230,7 +230,12 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const result = linhaSchema.safeParse(raw);
     if (!result.success) {
-      const reason = result.error.issues.map((e) => e.message).join("; ");
+      const reason = result.error.issues
+        .map((e) => {
+          const path = e.path.join(".");
+          return path ? `${path}: ${e.message}` : e.message;
+        })
+        .join("; ");
       errors.push({ line: lineNum, name: rowName, reason });
       continue;
     }
@@ -332,7 +337,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       if (tamanhos.length === 0) continue;
 
-      const imageUrl = row.variante_imagem_url || first.foto_1;
+      const imageUrl = row.variante_imagem_url || first.foto_1 || "";
 
       for (const tamanho of tamanhos) {
         if (tamanho.length > 10) {

@@ -180,7 +180,7 @@ export function ProductForm({
             estoque: v.stock,
             imageUrl: v.imageUrl,
           }))
-        : [{ cor: "", tamanho: "", estoque: 0, imageUrl: "" }],
+        : [],
     }),
     [categories, product],
   );
@@ -549,7 +549,7 @@ export function ProductForm({
                         name={`variantes.${index}.cor`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs">Cor *</FormLabel>
+                            <FormLabel className="text-xs">Cor</FormLabel>
                             <FormControl>
                               <Input
                                 className="rounded-xl"
@@ -566,7 +566,7 @@ export function ProductForm({
                         name={`variantes.${index}.tamanho`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs">Tamanho *</FormLabel>
+                            <FormLabel className="text-xs">Tamanho</FormLabel>
                             <FormControl>
                               <Input
                                 className="rounded-xl"
@@ -584,7 +584,7 @@ export function ProductForm({
                         name={`variantes.${index}.estoque`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs">Estoque *</FormLabel>
+                            <FormLabel className="text-xs">Estoque</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -604,7 +604,7 @@ export function ProductForm({
                           variant="ghost"
                           size="icon"
                           className="text-destructive hover:text-destructive"
-                          disabled={variantesFields.length === 1}
+                          disabled={false}
                           onClick={() => removeVariante(index)}
                         >
                           <TrashIcon className="size-4" />
@@ -656,6 +656,11 @@ export function ProductForm({
               </FormItem>
             )}
           />
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            Variantes são opcionais ao criar o produto. Você pode adicioná-las
+            ou editá-las depois pelo painel de variantes.
+          </p>
         </section>
 
 

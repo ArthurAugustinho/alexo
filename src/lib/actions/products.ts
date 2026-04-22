@@ -153,15 +153,19 @@ export async function createAdminProduct(
   }> = [];
 
   for (const variante of payload.data.variantes) {
+    const cor = variante.cor?.trim() ?? "";
+    const tamanho = variante.tamanho?.trim() ?? "";
+    if (!cor || !tamanho) continue;
+
     const slug = await getUniqueVariantSlug(
-      generateVariantSlug(productSlug, variante.cor, variante.tamanho),
+      generateVariantSlug(productSlug, cor, tamanho),
       undefined,
       usedVariantSlugs,
     );
     usedVariantSlugs.add(slug);
     variantEntries.push({
-      cor: variante.cor,
-      tamanho: variante.tamanho,
+      cor,
+      tamanho,
       estoque: variante.estoque,
       imageUrl: variante.imageUrl,
       slug,
@@ -229,19 +233,21 @@ export async function createAdminProduct(
 
     const primaryImageUrl = payload.data.images[0]?.url ?? "";
 
-    await tx.insert(productVariantTable).values(
-      variantEntries.map((v) => ({
-        productId: createdProduct.id,
-        name: v.cor,
-        color: v.cor,
-        size: v.tamanho,
-        imageUrl: v.imageUrl || primaryImageUrl,
-        priceInCents: finalPriceInCents,
-        slug: v.slug,
-        stock: v.estoque,
-        isAvailable: v.estoque > 0,
-      })),
-    );
+    if (variantEntries.length > 0) {
+      await tx.insert(productVariantTable).values(
+        variantEntries.map((v) => ({
+          productId: createdProduct.id,
+          name: v.cor,
+          color: v.cor,
+          size: v.tamanho,
+          imageUrl: v.imageUrl || primaryImageUrl,
+          priceInCents: finalPriceInCents,
+          slug: v.slug,
+          stock: v.estoque,
+          isAvailable: v.estoque > 0,
+        })),
+      );
+    }
   });
 
   revalidateProductPaths({
@@ -250,10 +256,14 @@ export async function createAdminProduct(
   });
 
   const variantCount = variantEntries.length;
+  const variantMessage =
+    variantCount > 0
+      ? ` com ${variantCount} variante${variantCount !== 1 ? "s" : ""}`
+      : " sem variantes";
 
   return {
     success: true,
-    message: `Produto criado com sucesso com ${variantCount} variante${variantCount !== 1 ? "s" : ""}.`,
+    message: `Produto criado com sucesso${variantMessage}.`,
     productId: createdProductId,
   };
 }
@@ -346,6 +356,10 @@ export async function updateAdminProduct(
   const primaryImageUrl = payload.data.images[0]?.url ?? "";
 
   for (const variante of payload.data.variantes) {
+    const cor = variante.cor?.trim() ?? "";
+    const tamanho = variante.tamanho?.trim() ?? "";
+    if (!cor || !tamanho) continue;
+
     const existing = variante.id
       ? existingVariantById.get(variante.id)
       : undefined;
@@ -354,8 +368,8 @@ export async function updateAdminProduct(
       variantOps.push({
         type: "update",
         variantId: existing.id,
-        cor: variante.cor,
-        tamanho: variante.tamanho,
+        cor,
+        tamanho,
         estoque: variante.estoque,
         imageUrl: variante.imageUrl || existing.imageUrl,
       });
@@ -363,7 +377,7 @@ export async function updateAdminProduct(
     }
 
     const slug = await getUniqueVariantSlug(
-      generateVariantSlug(productSlug, variante.cor, variante.tamanho),
+      generateVariantSlug(productSlug, cor, tamanho),
       undefined,
       usedVariantSlugs,
     );
@@ -371,8 +385,8 @@ export async function updateAdminProduct(
 
     variantOps.push({
       type: "insert",
-      cor: variante.cor,
-      tamanho: variante.tamanho,
+      cor,
+      tamanho,
       estoque: variante.estoque,
       imageUrl: variante.imageUrl || primaryImageUrl,
       slug,

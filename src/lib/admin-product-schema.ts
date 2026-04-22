@@ -151,16 +151,18 @@ export const adminProductSchema = z
       .array(
         z.object({
           id: z.string().uuid().optional(),
-          cor: z.string().trim().min(1, "Cor obrigatória"),
+          cor: z.string().trim().optional().or(z.literal("")),
           tamanho: z
             .string()
             .trim()
-            .min(1, "Tamanho obrigatório")
-            .max(10, "Máximo 10 caracteres"),
+            .max(10, "Máximo 10 caracteres")
+            .optional()
+            .or(z.literal("")),
           estoque: z.coerce
             .number()
             .int("Informe um número inteiro.")
-            .min(0, "Estoque não pode ser negativo."),
+            .min(0, "Estoque não pode ser negativo.")
+            .default(0),
           imageUrl: z
             .string()
             .url("URL inválida")
@@ -179,13 +181,6 @@ export const adminProductSchema = z
       });
     }
 
-    if (value.variantes.length === 0) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Adicione pelo menos uma variante.",
-        path: ["variantes"],
-      });
-    }
   });
 
 export const deleteAdminProductSchema = z.object({
