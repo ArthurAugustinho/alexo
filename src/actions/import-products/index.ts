@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 import { requireAdminSessionOrThrow } from "@/lib/admin-auth";
-import type { ImportProductsApiResponse, ImportError } from "@/app/api/admin/import-products/route";
+import type { ImportProductsApiResponse, ImportError, ImportWarning } from "@/app/api/admin/import-products/route";
 
 import { importProductsFileSchema } from "./schema";
 
@@ -12,6 +12,7 @@ type ImportProductsSuccess = {
   success: true;
   imported: number;
   errors: ImportError[];
+  warnings: ImportWarning[];
 };
 
 type ImportProductsFailure = {

@@ -74,13 +74,10 @@ const linhaSchema = z.object({
   foto_9: z.string().url().optional().or(z.literal("")),
   foto_10: z.string().url().optional().or(z.literal("")),
   video_url_produto: z.string().url().optional().or(z.literal("")),
-  // Per-variant fields
-  variante_cor: z.string().min(1, "variante_cor é obrigatório"),
-  variante_tamanho: z
-    .string()
-    .min(1, "variante_tamanho é obrigatório")
-    .max(10, "variante_tamanho máximo 10 caracteres"),
-  variante_estoque: z.coerce.number().int().min(0),
+  // Per-variant fields (cor e tamanho opcionais — produto pode ser criado sem variante)
+  variante_cor: z.string().optional().or(z.literal("")),
+  variante_tamanho: z.string().max(10).optional().or(z.literal("")),
+  variante_estoque: z.coerce.number().int().min(0).default(0),
   variante_imagem_url: z.string().url().optional().or(z.literal("")),
 });
 
@@ -97,10 +94,17 @@ export type ImportError = {
   reason: string;
 };
 
+export type ImportWarning = {
+  line: number;
+  name: string;
+  reason: string;
+};
+
 export type ImportProductsApiResponse = {
   success: true;
   imported: number;
   errors: ImportError[];
+  warnings: ImportWarning[];
 };
 
 function extractPhotos(row: CsvRow): string[] {
@@ -213,6 +217,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   );
 
   const errors: ImportError[] = [];
+  const warnings: ImportWarning[] = [];
 
   // --- Step 1: Validate each row individually ---
   const validRows: ParsedRow[] = [];
@@ -305,38 +310,58 @@ export async function POST(request: Request): Promise<NextResponse> {
       continue;
     }
 
-    // Build variant list, deduplicating by (cor, tamanho)
+    // Build variant list — supports comma-separated sizes in a single cell
     const variantKeys = new Set<string>();
     const variants: Array<{
       cor: string;
       tamanho: string;
       estoque: number;
       imageUrl: string;
-      lineNum: number;
     }> = [];
 
     for (const { data: row, lineNum } of rows) {
-      const variantKey = `${row.variante_cor}__${row.variante_tamanho}`;
-      if (variantKeys.has(variantKey)) {
-        errors.push({
-          line: lineNum,
-          name: productName,
-          reason: `Variante duplicada: cor "${row.variante_cor}" tamanho "${row.variante_tamanho}" já foi adicionada para este produto.`,
-        });
-        continue;
-      }
-      variantKeys.add(variantKey);
-      variants.push({
-        cor: row.variante_cor,
-        tamanho: row.variante_tamanho,
-        estoque: row.variante_estoque,
-        imageUrl: row.variante_imagem_url || first.foto_1,
-        lineNum,
-      });
-    }
+      const corRaw = row.variante_cor?.trim() ?? "";
+      const tamanhoRaw = row.variante_tamanho?.trim() ?? "";
 
-    if (variants.length === 0) {
-      continue;
+      // Row with no cor/tamanho: product will be imported without variants
+      if (!corRaw && !tamanhoRaw) continue;
+
+      const tamanhos = tamanhoRaw.includes(",")
+        ? tamanhoRaw.split(",").map((t) => t.trim()).filter(Boolean)
+        : tamanhoRaw ? [tamanhoRaw] : [];
+
+      if (tamanhos.length === 0) continue;
+
+      const imageUrl = row.variante_imagem_url || first.foto_1;
+
+      for (const tamanho of tamanhos) {
+        if (tamanho.length > 10) {
+          warnings.push({
+            line: lineNum,
+            name: productName,
+            reason: `Tamanho "${tamanho}" ignorado — máximo 10 caracteres`,
+          });
+          continue;
+        }
+
+        const variantKey = `${corRaw}__${tamanho}`;
+        if (variantKeys.has(variantKey)) {
+          errors.push({
+            line: lineNum,
+            name: productName,
+            reason: `Variante duplicada: cor "${corRaw}" tamanho "${tamanho}" já foi adicionada para este produto.`,
+          });
+          continue;
+        }
+
+        variantKeys.add(variantKey);
+        variants.push({
+          cor: corRaw,
+          tamanho,
+          estoque: row.variante_estoque,
+          imageUrl,
+        });
+      }
     }
 
     try {
@@ -390,32 +415,34 @@ export async function POST(request: Request): Promise<NextResponse> {
           );
         }
 
-        // Pre-compute unique variant slugs to avoid DB duplicates within this batch
-        const usedVariantSlugs = new Set<string>();
+        // Insert variants only when present (product may be created without variants)
+        if (variants.length > 0) {
+          const usedVariantSlugs = new Set<string>();
 
-        await tx.insert(productVariantTable).values(
-          variants.map(({ cor, tamanho, estoque, imageUrl }) => {
-            let slug = generateVariantSlug(productSlug, cor, tamanho);
-            let attempt = 1;
-            while (usedVariantSlugs.has(slug)) {
-              slug = `${generateVariantSlug(productSlug, cor, tamanho)}-${attempt}`;
-              attempt++;
-            }
-            usedVariantSlugs.add(slug);
+          await tx.insert(productVariantTable).values(
+            variants.map(({ cor, tamanho, estoque, imageUrl }) => {
+              let slug = generateVariantSlug(productSlug, cor, tamanho);
+              let attempt = 1;
+              while (usedVariantSlugs.has(slug)) {
+                slug = `${generateVariantSlug(productSlug, cor, tamanho)}-${attempt}`;
+                attempt++;
+              }
+              usedVariantSlugs.add(slug);
 
-            return {
-              productId,
-              name: cor,
-              slug,
-              size: tamanho,
-              color: cor,
-              priceInCents: first.preco_em_centavos,
-              imageUrl,
-              stock: estoque,
-              isAvailable: estoque > 0,
-            };
-          }),
-        );
+              return {
+                productId,
+                name: cor,
+                slug,
+                size: tamanho,
+                color: cor,
+                priceInCents: first.preco_em_centavos,
+                imageUrl,
+                stock: estoque,
+                isAvailable: estoque > 0,
+              };
+            }),
+          );
+        }
       });
 
       batchProductSlugs.add(productSlug);
@@ -432,6 +459,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     success: true,
     imported,
     errors,
+    warnings,
   };
 
   return NextResponse.json(response, { status: 200 });

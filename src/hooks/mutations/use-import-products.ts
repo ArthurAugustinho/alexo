@@ -3,14 +3,15 @@
 import { useMutation } from "@tanstack/react-query";
 
 import { importProducts } from "@/actions/import-products";
-import type { ImportError } from "@/app/api/admin/import-products/route";
+import type { ImportError, ImportWarning } from "@/app/api/admin/import-products/route";
 
-export type { ImportError };
+export type { ImportError, ImportWarning };
 
 export type ImportProductsSuccess = {
   success: true;
   imported: number;
   errors: ImportError[];
+  warnings: ImportWarning[];
 };
 
 export const getImportProductsMutationKey = () => ["import-products"] as const;

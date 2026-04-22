@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2Icon, CircleAlertIcon } from "lucide-react";
+import { CheckCircle2Icon, CircleAlertIcon, TriangleAlertIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,7 @@ export function ImportResultTable({ result }: ImportResultTableProps) {
   return (
     <div className="space-y-4">
       {/* Summary cards */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <Card className="border-emerald-200 bg-emerald-50">
           <CardHeader className="pb-1 pt-4">
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-emerald-700">
@@ -33,6 +33,20 @@ export function ImportResultTable({ result }: ImportResultTableProps) {
           <CardContent className="pb-4">
             <p className="text-3xl font-bold text-emerald-700">
               {result.imported}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-amber-200 bg-amber-50">
+          <CardHeader className="pb-1 pt-4">
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-amber-700">
+              <TriangleAlertIcon className="size-4" />
+              Avisos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <p className="text-3xl font-bold text-amber-700">
+              {result.warnings.length}
             </p>
           </CardContent>
         </Card>
@@ -51,6 +65,39 @@ export function ImportResultTable({ result }: ImportResultTableProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Warning table */}
+      {result.warnings.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-amber-700">Avisos (produto importado, mas com ressalvas)</p>
+          <div className="rounded-xl border border-amber-200">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-20">Linha</TableHead>
+                  <TableHead>Produto</TableHead>
+                  <TableHead>Aviso</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {result.warnings.map((warn, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-xs border-amber-300 text-amber-700">
+                        {warn.line}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{warn.name}</TableCell>
+                    <TableCell className="text-sm text-amber-700">
+                      {warn.reason}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
 
       {/* Error table */}
       {result.errors.length > 0 && (
